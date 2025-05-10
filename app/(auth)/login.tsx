@@ -14,6 +14,8 @@ import { Button } from '@/components/Button';
 import { colors, spacing, typography } from '@/theme';
 import { useRouter } from 'expo-router';
 import { Eye, EyeOff } from 'lucide-react-native';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/config/firebase';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -40,14 +42,27 @@ export default function LoginScreen() {
     try {
       setIsLoading(true);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Sign in with Firebase
+      await signInWithEmailAndPassword(auth, email.trim(), password);
       
-      // For demo purposes, we'll just navigate to the main app
-      // In a real app, you'd validate credentials and store tokens
+      // Navigate to main app on successful login
       router.replace('/(tabs)');
-    } catch (err) {
-      setError('Invalid email or password');
+    } catch (err: any) {
+      // Handle specific Firebase error codes
+      switch (err.code) {
+        case 'auth/invalid-email':
+          setError('Invalid email address');
+          break;
+        case 'auth/user-disabled':
+          setError('This account has been disabled');
+          break;
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+          setError('Invalid email or password');
+          break;
+        default:
+          setError('An error occurred. Please try again.');
+      }
       console.error(err);
     } finally {
       setIsLoading(false);

@@ -15,6 +15,9 @@ import { colors, spacing, typography } from '@/theme';
 import { useRouter } from 'expo-router';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react-native';
 import { UserRole } from '@/types';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '@/config/firebase';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -54,14 +57,43 @@ export default function RegisterScreen() {
     try {
       setIsLoading(true);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Create user with Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      const user = userCredential.user;
+
+      // Update user profile with display name
+      await updateProfile(user, {
+        displayName: name.trim()
+      });
+
+      // Store additional user data in Firestore
+      await setDoc(doc(db, 'users', user.uid), {
+        name: name.trim(),
+        email: email.trim(),
+        role: role,
+        createdAt: new Date().toISOString()
+      });
       
-      // For demo purposes, we'll just navigate to the main app
-      // In a real app, you'd register the user and store tokens
+      // Navigate to main app
       router.replace('/(tabs)');
-    } catch (err) {
-      setError('Failed to create account. Please try again.');
+    } catch (err: any) {
+      // Handle specific Firebase error codes
+      switch (err.code) {
+        case 'auth/email-already-in-use':
+          setError('An account with this email already exists');
+          break;
+        case 'auth/invalid-email':
+          setError('Invalid email address');
+          break;
+        case 'auth/operation-not-allowed':
+          setError('Email/password accounts are not enabled');
+          break;
+        case 'auth/weak-password':
+          setError('Password should be at least 6 characters');
+          break;
+        default:
+          setError('Failed to create account. Please try again.');
+      }
       console.error(err);
     } finally {
       setIsLoading(false);

@@ -5,6 +5,7 @@ import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useFonts } from 'expo-font';
 import { Inter_400Regular, Inter_500Medium, Inter_700Bold } from '@expo-google-fonts/inter';
 import { SplashScreen } from 'expo-router';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -31,7 +32,7 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <AuthProvider>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
@@ -39,6 +40,6 @@ export default function RootLayout() {
         <Stack.Screen name="+not-found" options={{ presentation: 'modal' }} />
       </Stack>
       <StatusBar style="auto" />
-    </>
+    </AuthProvider>
   );
 }

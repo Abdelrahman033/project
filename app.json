@@ -60,7 +60,8 @@
         {
           "photosPermission": "Allow Soil Pulse to access your photos to update your profile picture."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

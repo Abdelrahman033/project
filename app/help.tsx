@@ -80,48 +80,49 @@ export default function HelpSupportScreen() {
         title="Help & Support"
         showBackButton
       />
-      
       <ScrollView style={styles.content}>
-        <Card style={styles.contactCard}>
-          <Text style={styles.sectionTitle}>Contact Support</Text>
-          
+        <Card style={styles.section}>
+          <Text style={styles.sectionTitle}>Contact Us</Text>
           <TouchableOpacity 
             style={styles.contactItem}
             onPress={handleContactSupport}
           >
-            <Mail size={20} color={colors.primary[500]} />
-            <View style={styles.contactTextContainer}>
-              <Text style={styles.contactLabel}>Email Support</Text>
-              <Text style={styles.contactValue}>support@agritech.com</Text>
-            </View>
+            <Mail size={20} color={colors.neutral[600]} />
+            <Text style={styles.contactText}>Email Support</Text>
             <ChevronRight size={20} color={colors.neutral[400]} />
           </TouchableOpacity>
-          
           <TouchableOpacity 
             style={styles.contactItem}
             onPress={handleCallSupport}
           >
-            <Phone size={20} color={colors.primary[500]} />
-            <View style={styles.contactTextContainer}>
-              <Text style={styles.contactLabel}>Phone Support</Text>
-              <Text style={styles.contactValue}>+1 (234) 567-890</Text>
-            </View>
-            <ChevronRight size={20} color={colors.neutral[400]} />
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.contactItem}>
-            <MessageCircle size={20} color={colors.primary[500]} />
-            <View style={styles.contactTextContainer}>
-              <Text style={styles.contactLabel}>Live Chat</Text>
-              <Text style={styles.contactValue}>Available 24/7</Text>
-            </View>
+            <Phone size={20} color={colors.neutral[600]} />
+            <Text style={styles.contactText}>Call Support</Text>
             <ChevronRight size={20} color={colors.neutral[400]} />
           </TouchableOpacity>
         </Card>
 
-        <Card style={styles.faqCard}>
+        <Card style={styles.section}>
+          <Text style={styles.sectionTitle}>Resources</Text>
+          <TouchableOpacity 
+            style={styles.resourceItem}
+            onPress={handleOpenDocumentation}
+          >
+            <FileText size={20} color={colors.neutral[600]} />
+            <Text style={styles.resourceText}>Documentation</Text>
+            <ChevronRight size={20} color={colors.neutral[400]} />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.resourceItem}
+            onPress={handleOpenTutorials}
+          >
+            <Video size={20} color={colors.neutral[600]} />
+            <Text style={styles.resourceText}>Video Tutorials</Text>
+            <ChevronRight size={20} color={colors.neutral[400]} />
+          </TouchableOpacity>
+        </Card>
+
+        <Card style={styles.section}>
           <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
-          
           {faqData.map((faq, index) => (
             <TouchableOpacity
               key={index}
@@ -131,14 +132,11 @@ export default function HelpSupportScreen() {
               <View style={styles.faqHeader}>
                 <HelpCircle size={20} color={colors.neutral[600]} />
                 <Text style={styles.faqQuestion}>{faq.question}</Text>
-                <ChevronDown 
-                  size={20} 
-                  color={colors.neutral[400]}
-                  style={[
-                    styles.faqChevron,
-                    expandedFaq === index && styles.faqChevronExpanded
-                  ]}
-                />
+                {expandedFaq === index ? (
+                  <ChevronDown size={20} color={colors.neutral[400]} />
+                ) : (
+                  <ChevronRight size={20} color={colors.neutral[400]} />
+                )}
               </View>
               
               {expandedFaq === index && (
@@ -146,49 +144,6 @@ export default function HelpSupportScreen() {
               )}
             </TouchableOpacity>
           ))}
-        </Card>
-
-        <Card style={styles.resourcesCard}>
-          <Text style={styles.sectionTitle}>Resources</Text>
-          
-          <TouchableOpacity 
-            style={styles.resourceItem}
-            onPress={handleOpenDocumentation}
-          >
-            <FileText size={20} color={colors.primary[500]} />
-            <View style={styles.resourceTextContainer}>
-              <Text style={styles.resourceLabel}>Documentation</Text>
-              <Text style={styles.resourceDescription}>
-                Detailed guides and API references
-              </Text>
-            </View>
-            <ChevronRight size={20} color={colors.neutral[400]} />
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.resourceItem}
-            onPress={handleOpenTutorials}
-          >
-            <Video size={20} color={colors.primary[500]} />
-            <View style={styles.resourceTextContainer}>
-              <Text style={styles.resourceLabel}>Video Tutorials</Text>
-              <Text style={styles.resourceDescription}>
-                Step-by-step video guides
-              </Text>
-            </View>
-            <ChevronRight size={20} color={colors.neutral[400]} />
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.resourceItem}>
-            <BookOpen size={20} color={colors.primary[500]} />
-            <View style={styles.resourceTextContainer}>
-              <Text style={styles.resourceLabel}>Knowledge Base</Text>
-              <Text style={styles.resourceDescription}>
-                Articles and best practices
-              </Text>
-            </View>
-            <ChevronRight size={20} color={colors.neutral[400]} />
-          </TouchableOpacity>
         </Card>
       </ScrollView>
     </View>
@@ -204,14 +159,13 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: spacing.md,
   },
+  section: {
+    marginBottom: spacing.md,
+  },
   sectionTitle: {
     ...typography.headingSmall,
     color: colors.neutral[800],
     marginBottom: spacing.md,
-  },
-  contactCard: {
-    marginBottom: spacing.md,
-    padding: spacing.md,
   },
   contactItem: {
     flexDirection: 'row',
@@ -220,22 +174,24 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.neutral[200],
   },
-  contactTextContainer: {
+  contactText: {
+    ...typography.bodyMedium,
+    color: colors.neutral[700],
     flex: 1,
     marginLeft: spacing.sm,
   },
-  contactLabel: {
-    ...typography.labelMedium,
-    color: colors.neutral[800],
+  resourceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.neutral[200],
   },
-  contactValue: {
-    ...typography.bodySmall,
-    color: colors.neutral[600],
-    marginTop: spacing.xxs,
-  },
-  faqCard: {
-    marginBottom: spacing.md,
-    padding: spacing.md,
+  resourceText: {
+    ...typography.bodyMedium,
+    color: colors.neutral[700],
+    flex: 1,
+    marginLeft: spacing.sm,
   },
   faqItem: {
     marginBottom: spacing.sm,
@@ -246,45 +202,15 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   faqQuestion: {
-    ...typography.labelMedium,
+    ...typography.bodyMedium,
     color: colors.neutral[800],
     flex: 1,
     marginLeft: spacing.sm,
-  },
-  faqChevron: {
-    transform: [{ rotate: '0deg' }],
-  },
-  faqChevronExpanded: {
-    transform: [{ rotate: '180deg' }],
   },
   faqAnswer: {
     ...typography.bodyMedium,
     color: colors.neutral[600],
     marginLeft: spacing.xl,
     marginBottom: spacing.sm,
-  },
-  resourcesCard: {
-    marginBottom: spacing.md,
-    padding: spacing.md,
-  },
-  resourceItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.neutral[200],
-  },
-  resourceTextContainer: {
-    flex: 1,
-    marginLeft: spacing.sm,
-  },
-  resourceLabel: {
-    ...typography.labelMedium,
-    color: colors.neutral[800],
-  },
-  resourceDescription: {
-    ...typography.bodySmall,
-    color: colors.neutral[600],
-    marginTop: spacing.xxs,
   },
 }); 

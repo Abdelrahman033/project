@@ -13,6 +13,7 @@ import { Button } from '@/components/Button';
 import { colors, spacing, typography } from '@/theme';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, CheckCircle } from 'lucide-react-native';
+import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -23,24 +24,22 @@ export default function ForgotPasswordScreen() {
 
   const handleSubmit = async () => {
     setError(null);
-    
-    // Basic validation
+
     if (!email.trim()) {
       setError('Email is required');
       return;
     }
-    
+
     try {
       setIsLoading(true);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Show success message
+
+      const auth = getAuth();
+      await sendPasswordResetEmail(auth, email);
+
       setIsSubmitted(true);
-    } catch (err) {
-      setError('Failed to send reset link. Please try again.');
+    } catch (err: any) {
       console.error(err);
+      setError(err.message || 'Failed to send reset link. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -82,7 +81,7 @@ export default function ForgotPasswordScreen() {
       >
         <ArrowLeft size={24} color={colors.neutral[800]} />
       </TouchableOpacity>
-      
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}

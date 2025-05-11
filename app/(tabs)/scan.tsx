@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -9,39 +9,113 @@ import {
   ActivityIndicator,
   Alert
 } from 'react-native';
-import { CameraView, CameraType } from 'expo-camera';
+import { Camera, CameraType } from 'expo-camera';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
 import { colors, spacing, typography } from '@/theme';
 import { useRouter } from 'expo-router';
 import { usePermissions } from '@/utils/permissions';
-import { getCurrentLocation } from '@/utils/location';
 import { useNetworkStatus } from '@/utils/network';
 import { saveOfflineScan } from '@/utils/network';
 import { CameraOff, Repeat, Image as ImageIcon, Upload, MapPin } from 'lucide-react-native';
+import { CameraInitializer } from '@/components/CameraInitializer';
+import { CameraService, CameraStatus } from '@/services/CameraService';
 
 export default function ScanScreen() {
   const router = useRouter();
-  const cameraRef = useRef<any>(null);
-  const [type, setType] = useState<CameraType>('back');
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [cameraStatus, setCameraStatus] = useState<CameraStatus | null>(null);
+  const [camera, setCamera] = useState<Camera | null>(null);
+  const [type, setType] = useState(CameraType.back);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
-  const { camera, location, isLoading } = usePermissions();
+  const { location, isLoading } = usePermissions();
   const { isConnected } = useNetworkStatus();
 
-  const toggleCameraType = () => {
-    setType(current => (current === 'back' ? 'front' : 'back'));
+  useEffect(() => {
+    (async () => {
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      setHasPermission(status === 'granted');
+    })();
+  }, []);
+
+  const handleCameraReady = (status: CameraStatus) => {
+    setCameraStatus(status);
+    setIsInitializing(false);
+  };
+
+  const handleStartScan = async () => {
+    try {
+      // Check if camera is available
+      if (!camera) {
+        Alert.alert('Error', 'Camera is not ready. Please try again.');
+        return;
+      }
+
+      // Check if we have location permission for better analysis
+      if (!location.granted) {
+        const shouldRequestLocation = await new Promise((resolve) => {
+          Alert.alert(
+            'Location Access',
+            'Would you like to enable location access for better soil analysis?',
+            [
+              {
+                text: 'Not Now',
+                style: 'cancel',
+                onPress: () => resolve(false),
+              },
+              {
+                text: 'Enable',
+                onPress: () => resolve(true),
+              },
+            ]
+          );
+        });
+
+        if (shouldRequestLocation) {
+          await location.request();
+        }
+      }
+
+      // Take the picture
+      await takePicture();
+    } catch (error) {
+      console.error('Error in handleStartScan:', error);
+      Alert.alert(
+        'Scan Failed',
+        'Unable to start scan. Please make sure you have granted all necessary permissions and try again.'
+      );
+    }
+  };
+
+  const handleFlipCamera = () => {
+    setType(current => (current === CameraType.back ? CameraType.front : CameraType.back));
   };
 
   const takePicture = async () => {
-    if (cameraRef.current) {
+    if (camera) {
       try {
-        const photo = await cameraRef.current.takePictureAsync();
+        // Show loading state
+        setIsAnalyzing(true);
+        
+        // Take the picture with high quality
+        const photo = await camera.takePictureAsync({
+          quality: 1,
+          base64: true,
+          exif: true,
+        });
+
+        // Set the captured image
         setCapturedImage(photo.uri);
+        
+        // Reset analyzing state
+        setIsAnalyzing(false);
       } catch (error) {
         console.error('Error taking picture:', error);
         Alert.alert('Error', 'Failed to capture image. Please try again.');
+        setIsAnalyzing(false);
       }
     }
   };
@@ -124,27 +198,7 @@ export default function ScanScreen() {
     }
   };
 
-  // Request permissions if needed
-  const requestCameraPermission = async () => {
-    await camera.request();
-  };
-
-  const requestLocationPermission = async () => {
-    await location.request();
-  };
-
-  // Show loading state while checking permissions
-  if (isLoading) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={colors.primary[500]} />
-        <Text style={styles.permissionText}>Checking permissions...</Text>
-      </View>
-    );
-  }
-
-  // Show permission request screen if permissions are not granted
-  if (!camera.granted) {
+  if (hasPermission === null) {
     return (
       <View style={styles.container}>
         <Header title="Scan" />
@@ -156,7 +210,7 @@ export default function ScanScreen() {
           </Text>
           <Button 
             title="Grant Permission" 
-            onPress={requestCameraPermission}
+            onPress={() => Camera.requestCameraPermissionsAsync()}
             style={styles.permissionButton}
           />
         </View>
@@ -164,25 +218,23 @@ export default function ScanScreen() {
     );
   }
 
-  // If location permission is not granted, request it
-  if (!location.granted) {
+  if (hasPermission === false) {
     return (
       <View style={styles.container}>
         <Header title="Scan" />
         <View style={[styles.container, styles.centered]}>
-          <MapPin size={64} color={colors.neutral[400]} />
-          <Text style={styles.permissionTitle}>Location Access Required</Text>
+          <CameraOff size={64} color={colors.neutral[400]} />
+          <Text style={styles.permissionTitle}>Camera Access Denied</Text>
           <Text style={styles.permissionText}>
-            We need location permission to tag your soil scans with GPS coordinates.
+            Please enable camera access in your device settings to use this feature.
           </Text>
-          <Button 
-            title="Grant Permission" 
-            onPress={requestLocationPermission}
-            style={styles.permissionButton}
-          />
         </View>
       </View>
     );
+  }
+
+  if (isInitializing) {
+    return <CameraInitializer onCameraReady={handleCameraReady} />;
   }
 
   return (
@@ -190,30 +242,20 @@ export default function ScanScreen() {
       <Header title="Soil Scan" />
       
       <View style={styles.cameraContainer}>
-        {!capturedImage ? (
-          // Camera view
-          <CameraView
-            ref={cameraRef}
-            style={styles.camera}
-            facing={type}
-            enableZoomGesture
-          >
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity 
-                style={styles.flipButton} 
-                onPress={toggleCameraType}
-              >
-                <Repeat size={24} color={colors.white} />
-              </TouchableOpacity>
-            </View>
-          </CameraView>
-        ) : (
-          // Captured image preview
-          <Image 
-            source={{ uri: capturedImage }} 
-            style={styles.capturedImage} 
-          />
-        )}
+        <Camera
+          style={styles.camera}
+          type={type}
+          ref={ref => setCamera(ref)}
+        >
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={styles.flipButton}
+              onPress={handleFlipCamera}
+            >
+              <Text style={styles.flipButtonText}>Flip</Text>
+            </TouchableOpacity>
+          </View>
+        </Camera>
       </View>
       
       <View style={styles.controlsContainer}>
@@ -222,7 +264,7 @@ export default function ScanScreen() {
           <View style={styles.captureButtonContainer}>
             <TouchableOpacity 
               style={styles.captureButton}
-              onPress={takePicture}
+              onPress={handleStartScan}
             >
               <View style={styles.captureButtonInner} />
             </TouchableOpacity>
@@ -298,6 +340,10 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     borderRadius: 50,
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  flipButtonText: {
+    color: colors.white,
+    ...typography.labelMedium,
   },
   capturedImage: {
     flex: 1,

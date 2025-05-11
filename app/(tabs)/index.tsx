@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, RefreshControl } from 'react-native';
 import { Header } from '@/components/Header';
 import { Card } from '@/components/Card';
 import { SeverityIndicator } from '@/components/SeverityIndicator';
 import { AnalysisCard } from '@/components/AnalysisCard';
+import { WeatherCard } from '@/components/WeatherCard';
+import { SensorReadings } from '@/components/SensorReadings';
 import { colors, spacing, typography } from '@/theme';
 import { useRouter } from 'expo-router';
 import { SoilAnalysisResult } from '@/types';
-import { Bell, PlusCircle, Clock, Filter } from 'lucide-react-native';
+import { Bell } from 'lucide-react-native';
 
 // Mock data for demonstration
 const mockUser = {
@@ -114,19 +116,6 @@ export default function DashboardScreen() {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   
-  const handleNotificationsPress = () => {
-    // Handle notifications
-    console.log('Notifications pressed');
-  };
-  
-  const handleNewScanPress = () => {
-    router.push('/(tabs)/scan');
-  };
-  
-  const handleRecentRecordsPress = () => {
-    router.push('/(tabs)/recent');
-  };
-  
   const handleAnalysisPress = (analysisId: string) => {
     router.push(`/analysis/${analysisId}`);
   };
@@ -142,14 +131,11 @@ export default function DashboardScreen() {
 
   return (
     <View style={styles.container}>
-      <Header 
-        title="Dashboard"
-        showNotifications
-        onNotificationsPress={handleNotificationsPress}
-      />
+      <Header />
       
       <ScrollView 
         style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -160,79 +146,62 @@ export default function DashboardScreen() {
           <Text style={styles.farmText}>{mockUser.farmName}</Text>
         </View>
         
-        <View style={styles.actionSection}>
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={handleNewScanPress}
-          >
-            <PlusCircle size={24} color={colors.primary[500]} />
-            <Text style={styles.actionButtonText}>New Scan</Text>
-          </TouchableOpacity>
+        <View style={styles.mainContent}>
+          <WeatherCard />
           
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={handleRecentRecordsPress}
-          >
-            <Clock size={24} color={colors.primary[500]} />
-            <Text style={styles.actionButtonText}>Recent Records</Text>
-          </TouchableOpacity>
+          <SensorReadings 
+            soilMoisture={68}
+            airHumidity={55}
+          />
           
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={() => {}}
-          >
-            <Filter size={24} color={colors.primary[500]} />
-            <Text style={styles.actionButtonText}>Filter</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <View style={styles.summarySection}>
-          <Text style={styles.sectionTitle}>Farm Health Summary</Text>
-          
-          <Card style={styles.healthCard}>
-            <View style={styles.healthCardHeader}>
-              <Text style={styles.healthCardTitle}>Overall Soil Health</Text>
-              <Text style={styles.healthCardRating}>Good</Text>
-            </View>
+          <View style={styles.summarySection}>
+            <Text style={styles.sectionTitle}>Farm Health Summary</Text>
             
-            <SeverityIndicator 
-              level={2} 
-              type="horizontal"
-              size="large"
-              showLabel={false}
-            />
-            
-            <View style={styles.healthStatsContainer}>
-              <View style={styles.healthStat}>
-                <Text style={styles.healthStatValue}>5</Text>
-                <Text style={styles.healthStatLabel}>Total Scans</Text>
+            <Card style={styles.healthCard}>
+              <View style={styles.healthCardHeader}>
+                <Text style={styles.healthCardTitle}>Overall Soil Health</Text>
+                <Text style={styles.healthCardRating}>Good</Text>
               </View>
               
-              <View style={styles.healthStat}>
-                <Text style={styles.healthStatValue}>1</Text>
-                <Text style={styles.healthStatLabel}>Alerts</Text>
-              </View>
+              <SeverityIndicator 
+                level={2} 
+                type="horizontal"
+                size="large"
+                showLabel={false}
+              />
               
-              <View style={styles.healthStat}>
-                <Text style={styles.healthStatValue}>3</Text>
-                <Text style={styles.healthStatLabel}>Days Avg</Text>
+              <View style={styles.healthStatsContainer}>
+                <View style={styles.healthStat}>
+                  <Text style={styles.healthStatValue}>5</Text>
+                  <Text style={styles.healthStatLabel}>Total Scans</Text>
+                </View>
+                
+                <View style={styles.healthStat}>
+                  <Text style={styles.healthStatValue}>1</Text>
+                  <Text style={styles.healthStatLabel}>Alerts</Text>
+                </View>
+                
+                <View style={styles.healthStat}>
+                  <Text style={styles.healthStatValue}>3</Text>
+                  <Text style={styles.healthStatLabel}>Days Avg</Text>
+                </View>
               </View>
-            </View>
-          </Card>
-        </View>
-        
-        <View style={styles.recentSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Analyses</Text>
+            </Card>
           </View>
           
-          {mockAnalyses.map((analysis) => (
-            <AnalysisCard 
-              key={analysis.id}
-              analysis={analysis}
-              onPress={() => handleAnalysisPress(analysis.id)}
-            />
-          ))}
+          <View style={styles.recentSection}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Recent Analyses</Text>
+            </View>
+            
+            {mockAnalyses.map((analysis) => (
+              <AnalysisCard 
+                key={analysis.id}
+                analysis={analysis}
+                onPress={() => handleAnalysisPress(analysis.id)}
+              />
+            ))}
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -247,9 +216,12 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: spacing.xxl,
+  },
   welcomeSection: {
-    padding: spacing.md,
-    paddingTop: spacing.lg,
+    padding: spacing.lg,
+    paddingTop: spacing.xl,
     backgroundColor: colors.primary[500],
   },
   welcomeText: {
@@ -267,29 +239,12 @@ const styles = StyleSheet.create({
     color: colors.white,
     opacity: 0.9,
   },
-  actionSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: spacing.md,
-    backgroundColor: colors.white,
-    marginTop: -spacing.md,
-    borderRadius: spacing.md,
-    marginHorizontal: spacing.md,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  actionButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.md,
-  },
-  actionButtonText: {
-    ...typography.labelMedium,
-    color: colors.neutral[700],
-    marginTop: spacing.xs,
+  mainContent: {
+    marginTop: -spacing.lg,
+    borderTopLeftRadius: spacing.lg,
+    borderTopRightRadius: spacing.lg,
+    backgroundColor: colors.neutral[100],
+    paddingTop: spacing.lg,
   },
   summarySection: {
     padding: spacing.md,

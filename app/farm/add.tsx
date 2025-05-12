@@ -15,9 +15,11 @@ import { colors, spacing, typography } from '@/theme';
 import { useRouter } from 'expo-router';
 import { MapPin, Crop, Plus } from 'lucide-react-native';
 import * as Location from 'expo-location';
+import { useUser } from '@/app/context/UserContext';
 
 export default function AddFarmScreen() {
   const router = useRouter();
+  const { addFarm } = useUser();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -90,15 +92,15 @@ export default function AddFarmScreen() {
 
     setSaving(true);
     try {
-      // Simulate API call to create farm
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // In a real app, this would create the farm in the backend
-      console.log('Creating farm:', {
-        ...formData,
+      const farm = {
+        id: Date.now().toString(), // Generate a unique ID
+        name: formData.name.trim(),
         size: Number(formData.size),
+        location: formData.location,
         crops: formData.crops.split(',').map(crop => crop.trim()),
-      });
+      };
+
+      await addFarm(farm);
 
       Alert.alert(
         'Success',
@@ -111,6 +113,7 @@ export default function AddFarmScreen() {
         ]
       );
     } catch (error) {
+      console.error('Error adding farm:', error);
       Alert.alert('Error', 'Failed to add farm');
     } finally {
       setSaving(false);

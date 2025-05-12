@@ -6,6 +6,7 @@ import { useFonts } from 'expo-font';
 import { Inter_400Regular, Inter_500Medium, Inter_700Bold } from '@expo-google-fonts/inter';
 import { SplashScreen } from 'expo-router';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { UserProvider } from './context/UserContext';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -32,14 +33,16 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
-        <Stack.Screen name="(tabs)" options={{ animation: 'fade_from_bottom' }} />
-        <Stack.Screen name="+not-found" options={{ presentation: 'modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </AuthProvider>
+    <UserProvider>
+      <AuthProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
+          <Stack.Screen name="(tabs)" options={{ animation: 'fade_from_bottom' }} />
+          <Stack.Screen name="+not-found" options={{ presentation: 'modal' }} />
+        </Stack>
+        <StatusBar style="auto" />
+      </AuthProvider>
+    </UserProvider>
   );
 }

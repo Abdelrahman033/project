@@ -1,287 +1,273 @@
-import React, { useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  ScrollView,
-  Switch,
-  Alert,
-} from 'react-native';
-import { Header } from '@/components/Header';
-import { Card } from '@/components/Card';
-import { Button } from '@/components/Button';
-import { colors, spacing, typography } from '@/theme';
+import React from 'react';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
-import { User } from '@/types';
+import { useUser } from '../context/UserContext';
+import { colors, spacing, typography } from '@/theme';
+import { Card } from '@/components/Card';
 import { 
-  LogOut, 
-  User as UserIcon, 
-  Settings, 
-  Bell, 
-  HelpCircle, 
+  User, 
+  MapPin, 
+  Calendar, 
   Shield, 
-  Globe, 
-  Database,
-  ArrowRight,
-  PlusCircle,
-  MapPin,
-  ChevronRight,
+  HelpCircle,
+  Info,
+  Plus,
+  LogOut,
+  Edit2,
+  Settings,
+  Mail,
+  Phone,
+  Camera,
+  Activity,
+  FileText,
+  Clock
 } from 'lucide-react-native';
 
-// Mock user data
-const mockUser: User = {
-  id: 'user1',
-  email: 'john.doe@example.com',
-  name: 'John Doe',
-  role: 'farmer',
-  profileImageUrl: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg',
-  farms: [
-    {
-      id: 'farm1',
-      name: 'Green Valley Farm',
-      location: {
-        latitude: 37.7749,
-        longitude: -122.4194,
-      },
-      size: 250,
-      crops: ['Corn', 'Soybeans', 'Wheat'],
-    },
-    {
-      id: 'farm2',
-      name: 'Sunset Hills',
-      location: {
-        latitude: 37.7849,
-        longitude: -122.4294,
-      },
-      size: 180,
-      crops: ['Rice', 'Cotton'],
-    },
-  ],
-};
+const { width } = Dimensions.get('window');
+
+// Reusable Components
+const ProfileHeader = ({ user, onEditCover, onEditProfile }: { 
+  user: any; 
+  onEditCover: () => void;
+  onEditProfile: () => void;
+}) => (
+  <View style={styles.headerContainer}>
+    <View style={styles.coverPhotoContainer}>
+      <Image
+        source={{ uri: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80' }}
+        style={styles.coverPhoto}
+      />
+      <View style={styles.coverOverlay} />
+      <TouchableOpacity 
+        style={styles.editCoverButton}
+        onPress={onEditCover}
+        accessibilityRole="button"
+        accessibilityLabel="Edit Cover Photo"
+      >
+        <Camera size={20} color={colors.white} />
+      </TouchableOpacity>
+    </View>
+    
+    <View style={styles.profileImageContainer}>
+      <View style={styles.profileImageWrapper}>
+        <Image
+          source={{ uri: 'https://ui-avatars.com/api/?name=' + (user?.name || 'User') }}
+          style={styles.profileImage}
+        />
+        <View style={styles.profileImageBorder} />
+      </View>
+      <TouchableOpacity 
+        style={styles.editProfileImageButton}
+        onPress={onEditProfile}
+        accessibilityRole="button"
+        accessibilityLabel="Edit Profile Picture"
+      >
+        <Camera size={16} color={colors.white} />
+      </TouchableOpacity>
+    </View>
+
+    <View style={styles.profileInfo}>
+      <View style={styles.nameContainer}>
+        <Text style={styles.name}>{user?.name || 'Guest'}</Text>
+        <View style={styles.roleContainer}>
+          <User size={16} color={colors.primary[500]} />
+          <Text style={styles.role}>Farm Owner</Text>
+        </View>
+      </View>
+      <View style={styles.statsContainer}>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>24</Text>
+          <Text style={styles.statLabel}>Scans</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>8</Text>
+          <Text style={styles.statLabel}>Reports</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>2d</Text>
+          <Text style={styles.statLabel}>Active</Text>
+        </View>
+      </View>
+      <TouchableOpacity 
+        style={styles.editProfileButton}
+        onPress={onEditProfile}
+        accessibilityRole="button"
+        accessibilityLabel="Edit Profile"
+      >
+        <Edit2 size={16} color={colors.white} />
+        <Text style={styles.editProfileText}>Edit Profile</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+);
+
+const InfoSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <View style={styles.section}>
+    <Text style={styles.sectionTitle}>{title}</Text>
+    <Card style={styles.sectionCard}>
+      {children}
+    </Card>
+  </View>
+);
+
+const InfoItem = ({ icon: Icon, label, value }: { 
+  icon: React.ElementType; 
+  label: string; 
+  value: string;
+}) => (
+  <View style={styles.infoItem}>
+    <Icon size={20} color={colors.neutral[600]} />
+    <View style={styles.infoContent}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value}</Text>
+    </View>
+  </View>
+);
+
+const SettingItem = ({ 
+  icon: Icon, 
+  title, 
+  onPress 
+}: { 
+  icon: React.ElementType; 
+  title: string; 
+  onPress: () => void;
+}) => (
+  <TouchableOpacity 
+    style={styles.settingItem}
+    onPress={onPress}
+    accessibilityRole="button"
+    accessibilityLabel={title}
+  >
+    <Icon size={20} color={colors.neutral[600]} />
+    <Text style={styles.settingText}>{title}</Text>
+  </TouchableOpacity>
+);
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const [pushNotifications, setPushNotifications] = useState(true);
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [offlineMode, setOfflineMode] = useState(false);
-  const [highQualityImages, setHighQualityImages] = useState(true);
-  
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to log out?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Logout',
-          onPress: () => {
-            // Clear authentication and navigate to login
-            router.replace('/(auth)/login');
-          },
-          style: 'destructive',
-        },
-      ]
-    );
+  const { user, signOut } = useUser();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      router.replace('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
-  
-  const handleEditProfile = () => {
-    router.push('/profile/edit');
-  };
-  
-  const handleSettingsPress = () => {
-    router.push('/settings');
-  };
-  
-  const handleFarmPress = (farmId: string) => {
-    router.push(`/farm/${farmId}`);
-  };
-  
-  const handleAddFarm = () => {
-    router.push('/farm/add');
-  };
-  
-  const handleAdvancedSettingsPress = () => {
-    router.push('/settings/advanced');
-  };
-  
+
   return (
     <View style={styles.container}>
-      <Header title="Profile" />
-      
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.profileSection}>
-          <Image 
-            source={{ uri: mockUser.profileImageUrl }}
-            style={styles.profileImage}
-          />
-          <Text style={styles.profileName}>{mockUser.name}</Text>
-          <Text style={styles.profileEmail}>{mockUser.email}</Text>
-          <View style={styles.roleBadge}>
-            <Text style={styles.roleText}>
-              {mockUser.role.charAt(0).toUpperCase() + mockUser.role.slice(1)}
-            </Text>
-          </View>
-          
-          <Button
-            title="Edit Profile"
-            variant="outline"
-            size="small"
-            onPress={handleEditProfile}
-            style={styles.editButton}
-            icon={<UserIcon size={16} color={colors.primary[500]} />}
-          />
-        </View>
-        
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>My Farms</Text>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <ProfileHeader 
+          user={user}
+          onEditCover={() => router.push('/profile/edit-cover')}
+          onEditProfile={() => router.push('/profile/edit')}
+        />
+
+        <View style={styles.content}>
+          {/* General Information Section */}
+          <InfoSection title="General Information">
+            <InfoItem 
+              icon={Mail}
+              label="Email"
+              value={user?.email || 'Not provided'}
+            />
+            <InfoItem 
+              icon={Phone}
+              label="Phone"
+              value={user?.phone || 'Not provided'}
+            />
+            <InfoItem 
+              icon={MapPin}
+              label="Location"
+              value={user?.location || 'Not provided'}
+            />
+            <InfoItem 
+              icon={User}
+              label="Farm Name"
+              value={user?.farmName || 'Not provided'}
+            />
+          </InfoSection>
+
+          {/* Farm Activity Section */}
+          <InfoSection title="Farm Activity">
+            <View style={styles.activityGrid}>
+              <View style={styles.activityItem}>
+                <Activity size={24} color={colors.primary[500]} />
+                <Text style={styles.activityValue}>24</Text>
+                <Text style={styles.activityLabel}>Total Scans</Text>
+              </View>
+              <View style={styles.activityItem}>
+                <FileText size={24} color={colors.warning[500]} />
+                <Text style={styles.activityValue}>8</Text>
+                <Text style={styles.activityLabel}>Reports</Text>
+              </View>
+              <View style={styles.activityItem}>
+                <Clock size={24} color={colors.success[500]} />
+                <Text style={styles.activityValue}>2d</Text>
+                <Text style={styles.activityLabel}>Last Active</Text>
+              </View>
+            </View>
+          </InfoSection>
+
+          {/* Add Farm Section */}
+          {!user?.farmName && (
             <TouchableOpacity 
               style={styles.addFarmButton}
-              onPress={handleAddFarm}
+              onPress={() => router.push('/farm/add')}
+              accessibilityRole="button"
+              accessibilityLabel="Add Farm"
             >
-              <PlusCircle size={20} color={colors.primary[500]} />
-              <Text style={styles.addFarmText}>Add Farm</Text>
+              <Plus size={24} color={colors.white} />
+              <Text style={styles.addFarmText}>Add Your Farm</Text>
             </TouchableOpacity>
-          </View>
-          
-          {mockUser.farms?.map(farm => (
-            <Card 
-              key={farm.id}
-              onPress={() => handleFarmPress(farm.id)}
-              style={styles.farmCard}
-            >
-              <View style={styles.farmHeader}>
-                <View style={styles.farmTitleContainer}>
-                  <Text style={styles.farmName}>{farm.name}</Text>
-                  <View style={styles.farmSizeBadge}>
-                    <Text style={styles.farmSizeText}>{farm.size.toLocaleString()} m²</Text>
-                  </View>
-                </View>
-                <ArrowRight size={20} color={colors.neutral[400]} />
-              </View>
-              
-              <View style={styles.farmDetails}>
-                <View style={styles.farmDetailRow}>
-                  <MapPin size={16} color={colors.neutral[600]} />
-                  <Text style={styles.farmLocation}>
-                    {farm.location.latitude.toFixed(4)}, {farm.location.longitude.toFixed(4)}
-                  </Text>
-                </View>
-                
-                <View style={styles.cropContainer}>
-                  <Text style={styles.cropsLabel}>Crops: </Text>
-                  <View style={styles.cropTags}>
-                    {farm.crops.map((crop, index) => (
-                      <View key={index} style={styles.cropTag}>
-                        <Text style={styles.cropTagText}>{crop}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              </View>
-            </Card>
-          ))}
+          )}
+
+          {/* Settings Section */}
+          <InfoSection title="Settings">
+            <SettingItem
+              icon={Shield}
+              title="Security Settings"
+              onPress={() => router.push('/settings/security')}
+            />
+            <SettingItem
+              icon={Settings}
+              title="App Settings"
+              onPress={() => router.push('/settings/app')}
+            />
+            <SettingItem
+              icon={Info}
+              title="About"
+              onPress={() => router.push('/about')}
+            />
+            <SettingItem
+              icon={HelpCircle}
+              title="Help & Support"
+              onPress={() => router.push('/help')}
+            />
+          </InfoSection>
         </View>
-        
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Settings</Text>
-          
-          <Card style={styles.settingsCard}>
-            <View style={styles.settingItem}>
-              <View style={styles.settingLabelContainer}>
-                <Bell size={20} color={colors.neutral[600]} />
-                <Text style={styles.settingLabel}>Push Notifications</Text>
-              </View>
-              <Switch
-                value={pushNotifications}
-                onValueChange={setPushNotifications}
-                trackColor={{ false: colors.neutral[300], true: colors.primary[300] }}
-                thumbColor={pushNotifications ? colors.primary[500] : colors.neutral[100]}
-              />
-            </View>
-            
-            <View style={styles.settingItem}>
-              <View style={styles.settingLabelContainer}>
-                <Globe size={20} color={colors.neutral[600]} />
-                <Text style={styles.settingLabel}>Email Notifications</Text>
-              </View>
-              <Switch
-                value={emailNotifications}
-                onValueChange={setEmailNotifications}
-                trackColor={{ false: colors.neutral[300], true: colors.primary[300] }}
-                thumbColor={emailNotifications ? colors.primary[500] : colors.neutral[100]}
-              />
-            </View>
-            
-            <View style={styles.settingItem}>
-              <View style={styles.settingLabelContainer}>
-                <Database size={20} color={colors.neutral[600]} />
-                <Text style={styles.settingLabel}>Offline Mode</Text>
-              </View>
-              <Switch
-                value={offlineMode}
-                onValueChange={setOfflineMode}
-                trackColor={{ false: colors.neutral[300], true: colors.primary[300] }}
-                thumbColor={offlineMode ? colors.primary[500] : colors.neutral[100]}
-              />
-            </View>
-            
-            <View style={styles.settingItem}>
-              <View style={styles.settingLabelContainer}>
-                <Image size={20} color={colors.neutral[600]} />
-                <Text style={styles.settingLabel}>High Quality Images</Text>
-              </View>
-              <Switch
-                value={highQualityImages}
-                onValueChange={setHighQualityImages}
-                trackColor={{ false: colors.neutral[300], true: colors.primary[300] }}
-                thumbColor={highQualityImages ? colors.primary[500] : colors.neutral[100]}
-              />
-            </View>
-          </Card>
-          
-          <TouchableOpacity 
-            style={styles.settingButton}
-            onPress={handleAdvancedSettingsPress}
-          >
-            <Settings size={20} color={colors.neutral[700]} />
-            <Text style={styles.settingButtonText}>Advanced Settings</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.settingButton}
-            onPress={() => router.push('/help')}
-          >
-            <HelpCircle size={20} color={colors.neutral[700]} />
-            <Text style={styles.settingButtonText}>Help & Support</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.menuItem}
-            onPress={() => router.push('/privacy')}
-          >
-            <View style={styles.menuItemLeft}>
-              <Shield size={20} color={colors.neutral[600]} />
-              <Text style={styles.menuItemText}>Privacy & Security</Text>
-            </View>
-            <ChevronRight size={20} color={colors.neutral[400]} />
-          </TouchableOpacity>
-        </View>
-        
-        <Button
-          title="Logout"
-          variant="outline"
-          onPress={handleLogout}
-          style={styles.logoutButton}
-          icon={<LogOut size={20} color={colors.error[500]} />}
-          textStyle={{ color: colors.error[500] }}
-        />
       </ScrollView>
+
+      {/* Fixed Logout Button */}
+      <View style={styles.logoutContainer}>
+        <TouchableOpacity 
+          style={styles.logoutButton}
+          onPress={handleSignOut}
+          accessibilityRole="button"
+          accessibilityLabel="Sign Out"
+        >
+          <LogOut size={20} color={colors.error[500]} />
+          <Text style={styles.logoutText}>Sign Out</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -294,189 +280,274 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  profileSection: {
-    alignItems: 'center',
+  scrollContent: {
+    paddingBottom: 80, // Space for fixed logout button
+  },
+  headerContainer: {
     backgroundColor: colors.white,
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.neutral[200],
+    marginBottom: spacing.lg,
+  },
+  coverPhotoContainer: {
+    height: 200,
+    position: 'relative',
+  },
+  coverPhoto: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  coverOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  editCoverButton: {
+    position: 'absolute',
+    bottom: spacing.md,
+    right: spacing.md,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    padding: spacing.sm,
+    borderRadius: spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  profileImageContainer: {
+    position: 'absolute',
+    bottom: -50,
+    left: spacing.lg,
+  },
+  profileImageWrapper: {
+    position: 'relative',
   },
   profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 4,
+    borderColor: colors.white,
+  },
+  profileImageBorder: {
+    position: 'absolute',
+    top: -2,
+    left: -2,
+    right: -2,
+    bottom: -2,
+    borderRadius: 62,
+    borderWidth: 2,
+    borderColor: colors.primary[500],
+    opacity: 0.5,
+  },
+  editProfileImageButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: colors.primary[500],
+    padding: spacing.xs,
+    borderRadius: spacing.sm,
+    borderWidth: 2,
+    borderColor: colors.white,
+    shadowColor: colors.primary[500],
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  profileInfo: {
+    paddingTop: 60,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+    backgroundColor: colors.white,
+    borderBottomLeftRadius: spacing.lg,
+    borderBottomRightRadius: spacing.lg,
+    shadowColor: colors.neutral[900],
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  nameContainer: {
     marginBottom: spacing.md,
   },
-  profileName: {
-    ...typography.headingMedium,
+  name: {
+    ...typography.headingLarge,
     color: colors.neutral[800],
+    marginBottom: spacing.xxs,
+    fontSize: 32,
+    fontWeight: '700',
+    letterSpacing: -0.5,
   },
-  profileEmail: {
-    ...typography.bodyMedium,
-    color: colors.neutral[600],
-    marginTop: spacing.xs,
-  },
-  roleBadge: {
-    backgroundColor: colors.primary[100],
-    paddingVertical: spacing.xxs,
+  roleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.primary[50],
     paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
     borderRadius: spacing.sm,
-    marginTop: spacing.sm,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: colors.primary[100],
   },
-  roleText: {
+  role: {
+    ...typography.labelMedium,
+    color: colors.primary[600],
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.neutral[50],
+    padding: spacing.md,
+    borderRadius: spacing.sm,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.neutral[200],
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statValue: {
+    ...typography.headingSmall,
+    color: colors.neutral[800],
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  statLabel: {
     ...typography.labelSmall,
-    color: colors.primary[700],
+    color: colors.neutral[600],
+    marginTop: spacing.xxs,
   },
-  editButton: {
-    marginTop: spacing.md,
+  statDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: colors.neutral[200],
+  },
+  editProfileButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary[500],
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: spacing.sm,
+    alignSelf: 'flex-start',
+    gap: spacing.sm,
+    shadowColor: colors.primary[500],
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: colors.primary[600],
+  },
+  editProfileText: {
+    ...typography.labelMedium,
+    color: colors.white,
+    fontWeight: '600',
+    fontSize: 15,
+    letterSpacing: 0.3,
+  },
+  content: {
+    padding: spacing.lg,
   },
   section: {
-    padding: spacing.md,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   sectionTitle: {
     ...typography.headingSmall,
     color: colors.neutral[800],
-  },
-  farmCard: {
-    marginBottom: spacing.md,
-    padding: spacing.md,
-  },
-  farmHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: spacing.sm,
   },
-  farmTitleContainer: {
-    flex: 1,
+  sectionCard: {
+    padding: spacing.md,
+  },
+  infoItem: {
     flexDirection: 'row',
-    alignItems: 'center',
-  },
-  farmName: {
-    ...typography.labelLarge,
-    color: colors.neutral[800],
-    marginRight: spacing.sm,
-  },
-  farmSizeBadge: {
-    backgroundColor: colors.primary[100],
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xxs,
-    borderRadius: spacing.sm,
-  },
-  farmSizeText: {
-    ...typography.labelSmall,
-    color: colors.primary[700],
-  },
-  farmDetails: {
-    marginTop: spacing.sm,
-  },
-  farmDetailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.xs,
-  },
-  farmLocation: {
-    ...typography.bodySmall,
-    color: colors.neutral[600],
-    marginLeft: spacing.xs,
-  },
-  cropContainer: {
-    marginTop: spacing.xs,
-  },
-  cropsLabel: {
-    ...typography.bodySmall,
-    color: colors.neutral[600],
-    fontWeight: 'bold',
-    marginBottom: spacing.xs,
-  },
-  cropTags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-  },
-  cropTag: {
-    backgroundColor: colors.neutral[100],
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xxs,
-    borderRadius: spacing.sm,
-  },
-  cropTagText: {
-    ...typography.labelSmall,
-    color: colors.neutral[700],
-  },
-  settingsCard: {
-    marginBottom: spacing.md,
-  },
-  settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.neutral[200],
   },
-  settingLabelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  settingLabel: {
-    ...typography.labelMedium,
-    color: colors.neutral[700],
+  infoContent: {
     marginLeft: spacing.sm,
+    flex: 1,
   },
-  settingButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    padding: spacing.md,
-    borderRadius: spacing.sm,
-    marginBottom: spacing.sm,
+  infoLabel: {
+    ...typography.labelSmall,
+    color: colors.neutral[600],
   },
-  settingButtonText: {
+  infoValue: {
     ...typography.bodyMedium,
     color: colors.neutral[800],
-    marginLeft: spacing.md,
   },
-  logoutButton: {
-    marginHorizontal: spacing.md,
-    marginVertical: spacing.xl,
-    borderColor: colors.error[300],
+  activityGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+  },
+  activityItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  activityValue: {
+    ...typography.headingSmall,
+    color: colors.neutral[800],
+    marginTop: spacing.xxs,
+  },
+  activityLabel: {
+    ...typography.labelSmall,
+    color: colors.neutral[600],
+    marginTop: spacing.xxs,
   },
   addFarmButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.primary[50],
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: spacing.sm,
-  },
-  addFarmText: {
-    ...typography.labelMedium,
-    color: colors.primary[500],
-    marginLeft: spacing.xs,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white,
+    justifyContent: 'center',
+    backgroundColor: colors.primary[500],
     padding: spacing.md,
     borderRadius: spacing.sm,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
   },
-  menuItemLeft: {
+  addFarmText: {
+    ...typography.bodyMedium,
+    color: colors.white,
+    fontWeight: '600',
+  },
+  settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: spacing.md,
+    gap: spacing.sm,
+    borderRadius: spacing.sm,
   },
-  menuItemText: {
+  settingText: {
     ...typography.bodyMedium,
     color: colors.neutral[800],
-    marginLeft: spacing.md,
+  },
+  logoutContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: spacing.lg,
+    backgroundColor: colors.white,
+    borderTopWidth: 1,
+    borderTopColor: colors.neutral[200],
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.md,
+    backgroundColor: colors.error[50],
+    borderRadius: spacing.sm,
+    gap: spacing.sm,
+  },
+  logoutText: {
+    ...typography.bodyMedium,
+    color: colors.error[500],
+    fontWeight: '600',
   },
 });

@@ -4,6 +4,8 @@
  */
 
 import * as SecureStore from 'expo-secure-store';
+import { storage } from '@/config/firebase';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 export const storeData = async (key: string, value: any): Promise<void> => {
   try {
@@ -40,4 +42,37 @@ export const STORAGE_KEYS = {
   USER: 'user',
   OFFLINE_SCANS: 'offline_scans',
   APP_SETTINGS: 'app_settings',
+};
+
+export const uploadFile = async (uri: string, path: string): Promise<string> => {
+  try {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, blob);
+    return await getDownloadURL(storageRef);
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    throw error;
+  }
+};
+
+export const uploadProfileImage = async (userId: string, uri: string): Promise<string> => {
+  const path = `profile-images/${userId}`;
+  return uploadFile(uri, path);
+};
+
+export const uploadFarmImage = async (farmId: string, uri: string): Promise<string> => {
+  const path = `farm-images/${farmId}`;
+  return uploadFile(uri, path);
+};
+
+export const deleteFile = async (path: string): Promise<void> => {
+  try {
+    const storageRef = ref(storage, path);
+    await deleteObject(storageRef);
+  } catch (error) {
+    console.error('Error deleting file:', error);
+    throw error;
+  }
 };

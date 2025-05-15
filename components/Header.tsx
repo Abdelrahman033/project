@@ -17,6 +17,7 @@ interface HeaderProps {
   backgroundColor?: string;
   textColor?: string;
   rightComponent?: React.ReactNode;
+  rightElement?: React.ReactNode;
 }
 
 export const Header = ({
@@ -27,6 +28,7 @@ export const Header = ({
   backgroundColor = colors.white,
   textColor = colors.neutral[900],
   rightComponent,
+  rightElement,
 }: HeaderProps) => {
   const router = useRouter();
   
@@ -76,6 +78,11 @@ export const Header = ({
               </TouchableOpacity>
             )}
             {rightComponent}
+            {rightElement && (
+              <View style={styles.rightElement}>
+                {rightElement}
+              </View>
+            )}
           </View>
         </View>
       </SafeAreaView>
@@ -113,6 +120,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   notificationButton: {
+    padding: spacing.xs,
+  },
+  rightElement: {
     padding: spacing.xs,
   },
 });

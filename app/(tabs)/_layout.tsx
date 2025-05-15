@@ -16,6 +16,7 @@ export default function TabLayout() {
           fontSize: 12,
         },
         headerShown: false,
+        animation: 'fade',
       }}
     >
       <Tabs.Screen

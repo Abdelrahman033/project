@@ -1,5 +1,6 @@
 /**
- * Typography system for the SoilSense AI app
+ * Typography system for the Soil Pulse app
+ * Clean, modern, and highly readable fonts
  */
 
 import { TextStyle } from 'react-native';
@@ -39,70 +40,135 @@ export const fontWeight = {
 };
 
 export const typography: Record<string, TextStyle> = {
-  displayLarge: {
+  // Headings
+  h1: {
     fontFamily: fontFamily.bold,
-    fontSize: fontSize.display,
-    lineHeight: lineHeight.display,
-    fontWeight: fontWeight.bold,
+    fontSize: 32,
+    lineHeight: 40,
+    fontWeight: '700',
+    letterSpacing: -0.5,
   },
-  displayMedium: {
+  h2: {
     fontFamily: fontFamily.bold,
-    fontSize: fontSize.xxxl,
-    lineHeight: lineHeight.xxxl,
-    fontWeight: fontWeight.bold,
+    fontSize: 28,
+    lineHeight: 36,
+    fontWeight: '700',
+    letterSpacing: -0.5,
   },
-  headingLarge: {
+  h3: {
     fontFamily: fontFamily.bold,
-    fontSize: fontSize.xxl,
-    lineHeight: lineHeight.xxl,
-    fontWeight: fontWeight.bold,
+    fontSize: 24,
+    lineHeight: 32,
+    fontWeight: '600',
+    letterSpacing: -0.25,
   },
-  headingMedium: {
+  h4: {
     fontFamily: fontFamily.bold,
-    fontSize: fontSize.xl,
-    lineHeight: lineHeight.xl,
-    fontWeight: fontWeight.bold,
+    fontSize: 20,
+    lineHeight: 28,
+    fontWeight: '600',
+    letterSpacing: -0.25,
   },
-  headingSmall: {
-    fontFamily: fontFamily.medium,
-    fontSize: fontSize.lg,
-    lineHeight: lineHeight.lg,
-    fontWeight: fontWeight.medium,
+  h5: {
+    fontFamily: fontFamily.bold,
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '600',
+    letterSpacing: -0.25,
   },
-  bodyLarge: {
+  h6: {
+    fontFamily: fontFamily.bold,
+    fontSize: 16,
+    lineHeight: 24,
+    fontWeight: '600',
+    letterSpacing: -0.25,
+  },
+
+  // Body text
+  body1: {
     fontFamily: fontFamily.regular,
-    fontSize: fontSize.md,
-    lineHeight: lineHeight.md,
-    fontWeight: fontWeight.regular,
+    fontSize: 16,
+    lineHeight: 24,
+    fontWeight: '400',
+    letterSpacing: 0.15,
   },
-  bodyMedium: {
+  body2: {
     fontFamily: fontFamily.regular,
-    fontSize: fontSize.sm,
-    lineHeight: lineHeight.sm,
-    fontWeight: fontWeight.regular,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '400',
+    letterSpacing: 0.25,
   },
-  bodySmall: {
+  body3: {
     fontFamily: fontFamily.regular,
-    fontSize: fontSize.xs,
-    lineHeight: lineHeight.xs,
-    fontWeight: fontWeight.regular,
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '400',
+    letterSpacing: 0.4,
   },
-  labelLarge: {
-    fontFamily: fontFamily.medium,
-    fontSize: fontSize.md,
-    lineHeight: lineHeight.md,
-    fontWeight: fontWeight.medium,
+
+  // Buttons and interactive elements
+  button: {
+    fontFamily: fontFamily.bold,
+    fontSize: 16,
+    lineHeight: 24,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
-  labelMedium: {
+  buttonSmall: {
+    fontFamily: fontFamily.bold,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+
+  // Labels and captions
+  label: {
     fontFamily: fontFamily.medium,
-    fontSize: fontSize.sm,
-    lineHeight: lineHeight.sm,
-    fontWeight: fontWeight.medium,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '500',
+    letterSpacing: 0.1,
   },
   labelSmall: {
     fontFamily: fontFamily.medium,
-    fontSize: fontSize.xs,
-    lineHeight: lineHeight.xs,
-    fontWeight: fontWeight.medium,
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '500',
+    letterSpacing: 0.1,
+  },
+  caption: {
+    fontFamily: fontFamily.regular,
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '400',
+    letterSpacing: 0.4,
+  },
+
+  // Special text styles
+  overline: {
+    fontFamily: fontFamily.bold,
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '500',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+  subtitle1: {
+    fontFamily: fontFamily.bold,
+    fontSize: 16,
+    lineHeight: 24,
+    fontWeight: '500',
+    letterSpacing: 0.15,
+  },
+  subtitle2: {
+    fontFamily: fontFamily.bold,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '500',
+    letterSpacing: 0.1,
   },
 };

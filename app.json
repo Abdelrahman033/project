@@ -9,16 +9,20 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#F5F5F5"
     },
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "We need access to your camera to scan soil samples.",
-        "NSLocationWhenInUseUsageDescription": "We need access to your location to tag soil scans with GPS coordinates.",
-        "NSPhotoLibraryUsageDescription": "We need access to your photo library to update your profile picture."
+        "NSLocationWhenInUseUsageDescription": "We need access to your location to tag soil scans with GPS coordinates."
+      },
+      "splash": {
+        "image": "./assets/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#F5F5F5"
       }
     },
     "android": {
@@ -29,10 +33,13 @@
       "permissions": [
         "CAMERA",
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
-      ]
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "splash": {
+        "image": "./assets/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#F5F5F5"
+      }
     },
     "web": {
       "bundler": "metro",
@@ -53,12 +60,6 @@
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "Allow Soil Pulse to use your location to tag soil scans with GPS coordinates."
-        }
-      ],
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Allow Soil Pulse to access your photos to update your profile picture."
         }
       ],
       "expo-secure-store"

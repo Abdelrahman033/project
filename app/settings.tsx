@@ -1,72 +1,166 @@
 import React from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Card } from '@/components/Card';
+import { useUser } from '@/contexts/UserContext';
 import { colors, spacing, typography } from '@/theme';
-import { ArrowLeft, Bell, Shield, Database, HelpCircle, Info } from 'lucide-react-native';
+import { Card } from '@/components/Card';
+import { SettingItem } from '@/components/SettingItem';
+import {
+  Globe,
+  Bell,
+  User,
+  Phone,
+  Info,
+  FileText,
+  MessageCircle,
+  LogOut,
+  ChevronRight,
+  RefreshCw,
+  Wifi,
+  Shield,
+} from 'lucide-react-native';
+import { Header } from '@/components/Header';
+import { SettingItemCard } from '@/components/SettingItemCard';
 
-export default function SettingsPage() {
+export default function SettingsScreen() {
   const router = useRouter();
+  const { signOut } = useUser();
 
-  const settingsSections = [
-    {
-      title: 'Notifications',
-      icon: <Bell size={24} color={colors.primary[500]} />,
-      route: '/settings/notifications'
-    },
-    {
-      title: 'Privacy & Security',
-      icon: <Shield size={24} color={colors.primary[500]} />,
-      route: '/settings/privacy'
-    },
-    {
-      title: 'Data Management',
-      icon: <Database size={24} color={colors.primary[500]} />,
-      route: '/settings/data'
-    },
-    {
-      title: 'Help & Support',
-      icon: <HelpCircle size={24} color={colors.primary[500]} />,
-      route: '/settings/help'
-    },
-    {
-      title: 'About',
-      icon: <Info size={24} color={colors.primary[500]} />,
-      route: '/settings/about'
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      router.replace('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
     }
-  ];
+  };
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <ArrowLeft size={24} color={colors.neutral[800]} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Settings</Text>
-        </View>
-      </View>
-
+      <Header 
+        title="Settings"
+        showBackButton
+      />
       <ScrollView 
-        style={styles.scrollView}
+        style={styles.content}
         contentContainerStyle={styles.scrollContent}
       >
-        {settingsSections.map((section, index) => (
-          <TouchableOpacity
-            key={section.title}
-            style={styles.sectionButton}
-            onPress={() => router.push(section.route)}
-          >
-            <View style={styles.sectionContent}>
-              {section.icon}
-              <Text style={styles.sectionTitle}>{section.title}</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
+        {/* General Settings */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>General Settings</Text>
+          <Card style={styles.sectionCard}>
+            <SettingItem 
+              icon={Globe}
+              title="Language"
+              value="English"
+              onPress={() => router.push('/about' as any)}
+              showChevron
+            />
+            <SettingItem 
+              icon={Bell}
+              title="Notifications"
+              value="Enabled"
+              onPress={() => router.push('/about' as any)}
+              showChevron
+            />
+          </Card>
+        </View>
+
+        {/* Profile & Account */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Profile & Account</Text>
+          <Card style={styles.sectionCard}>
+            <SettingItem 
+              icon={User}
+              title="Edit Profile"
+              onPress={() => router.push('/profile/edit')}
+              showChevron
+            />
+            <SettingItem 
+              icon={Phone}
+              title="Change Phone Number"
+              value="+1 (234) 567-8900"
+              onPress={() => router.push('/about' as any)}
+              showChevron
+            />
+          </Card>
+        </View>
+
+        {/* App Info & Support */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>App Info & Support</Text>
+          <Card style={styles.sectionCard}>
+            <SettingItem 
+              icon={Info}
+              title="About Soil Pulse"
+              onPress={() => router.push('/about')}
+              showChevron
+            />
+            <SettingItem 
+              icon={FileText}
+              title="Privacy Policy"
+              onPress={() => router.push('/privacy')}
+              showChevron
+            />
+            <SettingItem 
+              icon={FileText}
+              title="Terms & Conditions"
+              onPress={() => router.push('/terms')}
+              showChevron
+            />
+            <SettingItem 
+              icon={MessageCircle}
+              title="Contact Support"
+              onPress={() => router.push('/support')}
+              showChevron
+            />
+          </Card>
+        </View>
+
+        {/* Advanced Settings Section */}
+        <View style={styles.section}>
+          <SettingItemCard
+            icon={<Bell size={24} color={colors.primary[500]} />}
+            title="Advanced Notifications"
+            description="Manage alerts, thresholds, and AI-based soil warnings"
+            onPress={() => router.push('/settings/advanced-notifications' as any)}
+          />
+          
+          <SettingItemCard
+            icon={<RefreshCw size={24} color={colors.primary[500]} />}
+            title="Data Synchronization"
+            description="Control offline/online sync options and data refresh intervals"
+            onPress={() => router.push('/settings/data-sync' as any)}
+          />
+          
+          <SettingItemCard
+            icon={<Wifi size={24} color={colors.primary[500]} />}
+            title="Network Settings"
+            description="Manage data usage, low bandwidth mode, and Wi-Fi-only mode"
+            onPress={() => router.push('/settings/network' as any)}
+          />
+          
+          <SettingItemCard
+            icon={<Shield size={24} color={colors.primary[500]} />}
+            title="Security Settings"
+            description="Manage app security, PIN code, biometric lock, and session timeouts"
+            onPress={() => router.push('/settings/security' as any)}
+          />
+        </View>
       </ScrollView>
+
+      {/* Fixed Logout Button */}
+      <View style={styles.logoutContainer}>
+        <TouchableOpacity 
+          style={styles.logoutButton}
+          onPress={handleSignOut}
+          accessibilityRole="button"
+          accessibilityLabel="Sign Out"
+        >
+          <LogOut size={20} color={colors.error[500]} />
+          <Text style={styles.logoutText}>Sign Out</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -76,51 +170,39 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.neutral[100],
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacing.md,
-    backgroundColor: colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.neutral[200],
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  backButton: {
-    padding: spacing.xs,
-    marginRight: spacing.sm,
-  },
-  headerTitle: {
-    ...typography.headingMedium,
-    color: colors.neutral[800],
-  },
-  scrollView: {
+  content: {
     flex: 1,
   },
   scrollContent: {
     padding: spacing.md,
   },
-  sectionButton: {
-    backgroundColor: colors.white,
-    borderRadius: spacing.sm,
-    marginBottom: spacing.sm,
-    padding: spacing.md,
-    elevation: 2,
-    shadowColor: colors.neutral[900],
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  sectionContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
+  section: {
+    marginBottom: spacing.lg,
   },
   sectionTitle: {
-    ...typography.bodyLarge,
-    color: colors.neutral[800],
+    ...typography.h3,
+    color: colors.neutral[700],
+    marginBottom: spacing.sm,
+    marginLeft: spacing.xs,
+  },
+  sectionCard: {
+    padding: spacing.md,
+  },
+  logoutContainer: {
+    padding: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.neutral[200],
+    backgroundColor: colors.white,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    padding: spacing.sm,
+  },
+  logoutText: {
+    ...typography.button,
+    color: colors.error[500],
   },
 }); 

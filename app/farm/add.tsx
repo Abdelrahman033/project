@@ -15,11 +15,12 @@ import { colors, spacing, typography } from '@/theme';
 import { useRouter } from 'expo-router';
 import { MapPin, Crop, Plus } from 'lucide-react-native';
 import * as Location from 'expo-location';
-import { useUser } from '@/app/context/UserContext';
+import { useUser } from '@/contexts/UserContext';
+import { Farm } from '@/types/auth';
 
 export default function AddFarmScreen() {
   const router = useRouter();
-  const { addFarm } = useUser();
+  const { user, updateUser } = useUser();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -69,38 +70,42 @@ export default function AddFarmScreen() {
   };
 
   const handleSave = async () => {
-    // Validate form data
+    // Basic validation
     if (!formData.name.trim()) {
-      Alert.alert('Error', 'Farm name is required');
+      Alert.alert('Error', 'Please enter farm name');
       return;
     }
 
-    if (!formData.size.trim() || isNaN(Number(formData.size))) {
-      Alert.alert('Error', 'Please enter a valid farm size');
-      return;
-    }
-
-    if (formData.location.latitude === 0 && formData.location.longitude === 0) {
-      Alert.alert('Error', 'Please set your farm location');
+    if (!formData.size.trim()) {
+      Alert.alert('Error', 'Please enter farm size');
       return;
     }
 
     if (!formData.crops.trim()) {
-      Alert.alert('Error', 'Please enter at least one crop');
+      Alert.alert('Error', 'Please enter crops');
+      return;
+    }
+
+    const size = parseFloat(formData.size);
+    if (isNaN(size) || size <= 0) {
+      Alert.alert('Error', 'Please enter a valid farm size');
       return;
     }
 
     setSaving(true);
     try {
-      const farm = {
-        id: Date.now().toString(), // Generate a unique ID
+      const newFarm: Farm = {
+        id: Date.now().toString(), // Temporary ID, will be replaced by Firestore
         name: formData.name.trim(),
-        size: Number(formData.size),
-        location: formData.location,
+        size: size,
         crops: formData.crops.split(',').map(crop => crop.trim()),
+        location: formData.location,
+        createdAt: new Date().toISOString(),
       };
 
-      await addFarm(farm);
+      // Update user's farms array
+      const updatedFarms = [...(user?.farms || []), newFarm];
+      await updateUser({ farms: updatedFarms });
 
       Alert.alert(
         'Success',
@@ -114,7 +119,11 @@ export default function AddFarmScreen() {
       );
     } catch (error) {
       console.error('Error adding farm:', error);
-      Alert.alert('Error', 'Failed to add farm');
+      Alert.alert(
+        'Error',
+        'Failed to add farm. Please try again.',
+        [{ text: 'OK' }]
+      );
     } finally {
       setSaving(false);
     }
@@ -123,11 +132,14 @@ export default function AddFarmScreen() {
   return (
     <View style={styles.container}>
       <Header 
-        title="Add New Farm"
+        title="Add Farm"
         showBackButton
       />
       
-      <ScrollView style={styles.content}>
+      <ScrollView 
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+      >
         <Card style={styles.formCard}>
           <Text style={styles.label}>Farm Name</Text>
           <TextInput
@@ -138,7 +150,7 @@ export default function AddFarmScreen() {
             placeholderTextColor={colors.neutral[400]}
           />
 
-          <Text style={styles.label}>Farm Size (square meters)</Text>
+          <Text style={styles.label}>Farm Size (m²)</Text>
           <TextInput
             style={styles.input}
             value={formData.size}
@@ -147,16 +159,13 @@ export default function AddFarmScreen() {
             placeholderTextColor={colors.neutral[400]}
             keyboardType="numeric"
           />
-          <Text style={styles.unitNote}>
-            Enter the total area of your farm in square meters (m²)
-          </Text>
 
-          <Text style={styles.label}>Crops (comma-separated)</Text>
+          <Text style={styles.label}>Crops</Text>
           <TextInput
             style={styles.input}
             value={formData.crops}
             onChangeText={(text) => setFormData(prev => ({ ...prev, crops: text }))}
-            placeholder="Enter crops (e.g., Corn, Wheat, Soybeans)"
+            placeholder="Enter crops (comma-separated)"
             placeholderTextColor={colors.neutral[400]}
           />
 
@@ -168,36 +177,24 @@ export default function AddFarmScreen() {
           >
             <MapPin size={20} color={colors.primary[500]} />
             <Text style={styles.locationButtonText}>
-              {locationLoading ? 'Getting Location...' : 'Get Current Location'}
+              {locationLoading ? 'Getting Location...' : 'Use Current Location'}
             </Text>
           </TouchableOpacity>
 
-          {formData.location.latitude !== 0 && formData.location.longitude !== 0 && (
-            <View style={styles.locationContainer}>
-              <MapPin size={20} color={colors.neutral[600]} />
-              <Text style={styles.locationText}>
-                {formData.location.latitude.toFixed(4)}, {formData.location.longitude.toFixed(4)}
-              </Text>
-            </View>
+          {formData.location.latitude !== 0 && (
+            <Text style={styles.locationText}>
+              Latitude: {formData.location.latitude.toFixed(6)}{'\n'}
+              Longitude: {formData.location.longitude.toFixed(6)}
+            </Text>
           )}
         </Card>
 
-        <View style={styles.actionsContainer}>
-          <Button
-            title="Add Farm"
-            onPress={handleSave}
-            loading={saving}
-            icon={<Plus size={20} color={colors.white} />}
-            style={styles.saveButton}
-          />
-          
-          <Button
-            title="Cancel"
-            variant="outline"
-            onPress={() => router.back()}
-            style={styles.cancelButton}
-          />
-        </View>
+        <Button
+          title="Add Farm"
+          onPress={handleSave}
+          loading={saving}
+          style={styles.saveButton}
+        />
       </ScrollView>
     </View>
   );
@@ -210,6 +207,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
     padding: spacing.md,
   },
   formCard: {
@@ -231,46 +230,28 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     marginBottom: spacing.md,
   },
-  unitNote: {
-    ...typography.labelSmall,
-    color: colors.neutral[500],
-    fontStyle: 'italic',
-    marginTop: -spacing.md,
-    marginBottom: spacing.md,
-  },
   locationButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
     backgroundColor: colors.primary[50],
-    padding: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.primary[200],
     borderRadius: spacing.sm,
+    padding: spacing.sm,
     marginBottom: spacing.md,
   },
   locationButtonText: {
-    ...typography.labelMedium,
+    ...typography.button,
     color: colors.primary[500],
-    marginLeft: spacing.xs,
-  },
-  locationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.neutral[50],
-    padding: spacing.sm,
-    borderRadius: spacing.sm,
-    marginBottom: spacing.xs,
   },
   locationText: {
-    ...typography.bodyMedium,
+    ...typography.bodySmall,
     color: colors.neutral[600],
-    marginLeft: spacing.xs,
-  },
-  actionsContainer: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.md,
   },
   saveButton: {
-    marginBottom: spacing.sm,
-  },
-  cancelButton: {
-    borderColor: colors.neutral[300],
+    marginTop: spacing.sm,
   },
 }); 

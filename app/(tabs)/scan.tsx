@@ -7,9 +7,11 @@ import {
   Image,
   Platform,
   ActivityIndicator,
-  Alert
+  Alert,
+  Animated
 } from 'react-native';
-import { Camera, CameraType } from 'expo-camera';
+import { Camera } from 'expo-camera';
+import type { CameraCapturedPicture } from 'expo-camera';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
 import { colors, spacing, typography } from '@/theme';
@@ -20,19 +22,26 @@ import { saveOfflineScan } from '@/utils/network';
 import { CameraOff, Repeat, Image as ImageIcon, Upload, MapPin } from 'lucide-react-native';
 import { CameraInitializer } from '@/components/CameraInitializer';
 import { CameraService, CameraStatus } from '@/services/CameraService';
+import { Card } from '@/components/Card';
+import { SoilAnalysisResult, SoilDisease } from '@/types/analysis';
+import * as Location from 'expo-location';
+
+type CameraMode = 'selection' | 'phone' | 'external';
 
 export default function ScanScreen() {
   const router = useRouter();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [cameraStatus, setCameraStatus] = useState<CameraStatus | null>(null);
-  const [camera, setCamera] = useState<Camera | null>(null);
-  const [type, setType] = useState(CameraType.back);
+  const [camera, setCamera] = useState<typeof Camera | null>(null);
+  const [type, setType] = useState(Camera.Constants.Type.back);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
+  const [cameraMode, setCameraMode] = useState<CameraMode>('selection');
   const { location, isLoading } = usePermissions();
   const { isConnected } = useNetworkStatus();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     (async () => {
@@ -46,15 +55,43 @@ export default function ScanScreen() {
     setIsInitializing(false);
   };
 
+  const handlePhoneCameraSelect = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setCameraMode('phone');
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    });
+  };
+
+  const handleExternalCameraSelect = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setCameraMode('external');
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    });
+  };
+
   const handleStartScan = async () => {
     try {
-      // Check if camera is available
       if (!camera) {
         Alert.alert('Error', 'Camera is not ready. Please try again.');
         return;
       }
 
-      // Check if we have location permission for better analysis
       if (!location.granted) {
         const shouldRequestLocation = await new Promise((resolve) => {
           Alert.alert(
@@ -79,7 +116,6 @@ export default function ScanScreen() {
         }
       }
 
-      // Take the picture
       await takePicture();
     } catch (error) {
       console.error('Error in handleStartScan:', error);
@@ -91,26 +127,23 @@ export default function ScanScreen() {
   };
 
   const handleFlipCamera = () => {
-    setType(current => (current === CameraType.back ? CameraType.front : CameraType.back));
+    setType((current) => 
+      current === Camera.Constants.Type.back 
+        ? Camera.Constants.Type.front 
+        : Camera.Constants.Type.back
+    );
   };
 
   const takePicture = async () => {
     if (camera) {
       try {
-        // Show loading state
         setIsAnalyzing(true);
-        
-        // Take the picture with high quality
         const photo = await camera.takePictureAsync({
           quality: 1,
           base64: true,
           exif: true,
         });
-
-        // Set the captured image
         setCapturedImage(photo.uri);
-        
-        // Reset analyzing state
         setIsAnalyzing(false);
       } catch (error) {
         console.error('Error taking picture:', error);
@@ -130,29 +163,30 @@ export default function ScanScreen() {
     
     try {
       setIsAnalyzing(true);
+      let userLocation = null;
       
-      // Get current location for the scan
-      const userLocation = await getCurrentLocation();
+      if (location.granted) {
+        const locationResult = await Location.getCurrentPositionAsync({});
+        userLocation = {
+          latitude: locationResult.coords.latitude,
+          longitude: locationResult.coords.longitude,
+          accuracy: locationResult.coords.accuracy || undefined
+        };
+      }
       
-      // Simulate image upload and AI analysis
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // For demo purposes, create a mock analysis result
-      const mockAnalysisData = {
+      const mockAnalysisData: Omit<SoilAnalysisResult, 'id' | 'isSynced'> = {
         userId: 'user1',
         farmId: 'farm1',
         imageUrl: capturedImage,
         timestamp: Date.now(),
-        location: userLocation ? {
-          latitude: userLocation.latitude,
-          longitude: userLocation.longitude,
-          accuracy: userLocation.accuracy
-        } : {
+        location: userLocation || {
           latitude: 37.7749,
           longitude: -122.4194
         },
         disease: {
-          type: 'fungal_infection',
+          type: 'fungal_infection' as SoilDisease,
           confidence: 0.87,
           severity: 3.5
         },
@@ -171,7 +205,6 @@ export default function ScanScreen() {
         }
       };
       
-      // If offline, save the scan locally
       if (!isConnected) {
         await saveOfflineScan(mockAnalysisData);
         Alert.alert(
@@ -179,14 +212,11 @@ export default function ScanScreen() {
           'Your scan has been saved offline. It will sync when you reconnect to the internet.'
         );
       } else {
-        // In a real app, this would send the image to your API
         console.log('Analysis data:', mockAnalysisData);
       }
       
       setAnalysisComplete(true);
       
-      // Navigate to the analysis result
-      // In a real app, you'd pass the actual analysis ID
       setTimeout(() => {
         router.push('/analysis/new');
       }, 1000);
@@ -237,69 +267,129 @@ export default function ScanScreen() {
     return <CameraInitializer onCameraReady={handleCameraReady} />;
   }
 
+  const renderCameraSelection = () => (
+    <Animated.View style={[styles.selectionContainer, { opacity: fadeAnim }]}>
+      <Text style={styles.selectionTitle}>Choose Camera</Text>
+      <Text style={styles.selectionSubtitle}>Select your preferred camera for soil analysis</Text>
+      
+      <View style={styles.cameraOptionsContainer}>
+        <TouchableOpacity
+          style={styles.cameraOption}
+          onPress={handlePhoneCameraSelect}
+        >
+          <View style={styles.cameraOptionContent}>
+            <CameraOff size={32} color={colors.primary[500]} />
+            <Text style={styles.cameraOptionTitle}>Use Phone Camera</Text>
+            <Text style={styles.cameraOptionDescription}>
+              Take photos using your device's camera
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.cameraOption}
+          onPress={handleExternalCameraSelect}
+        >
+          <View style={styles.cameraOptionContent}>
+            <CameraOff size={32} color={colors.neutral[400]} />
+            <Text style={styles.cameraOptionTitle}>Use Connected Camera</Text>
+            <Text style={styles.cameraOptionDescription}>
+              Connect your external soil analysis camera
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+    </Animated.View>
+  );
+
+  const renderExternalCameraPlaceholder = () => (
+    <Animated.View style={[styles.externalCameraContainer, { opacity: fadeAnim }]}>
+      <Card style={styles.externalCameraCard}>
+        <CameraOff size={48} color={colors.neutral[400]} />
+        <Text style={styles.externalCameraTitle}>External Camera Not Connected</Text>
+        <Text style={styles.externalCameraText}>
+          Support for external camera devices will be available soon.
+        </Text>
+        <Button
+          title="Try Again"
+          variant="outline"
+          onPress={() => setCameraMode('selection')}
+          icon={<Repeat size={20} color={colors.primary[500]} />}
+          style={styles.retryButton}
+        />
+      </Card>
+    </Animated.View>
+  );
+
   return (
     <View style={styles.container}>
       <Header title="Soil Scan" />
       
-      <View style={styles.cameraContainer}>
-        <Camera
-          style={styles.camera}
-          type={type}
-          ref={ref => setCamera(ref)}
-        >
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={styles.flipButton}
-              onPress={handleFlipCamera}
-            >
-              <Text style={styles.flipButtonText}>Flip</Text>
-            </TouchableOpacity>
-          </View>
-        </Camera>
-      </View>
+      {cameraMode === 'selection' && renderCameraSelection()}
       
-      <View style={styles.controlsContainer}>
-        {!capturedImage ? (
-          // Camera controls
-          <View style={styles.captureButtonContainer}>
-            <TouchableOpacity 
-              style={styles.captureButton}
-              onPress={handleStartScan}
-            >
-              <View style={styles.captureButtonInner} />
-            </TouchableOpacity>
-            <Text style={styles.captureText}>Tap to capture soil image</Text>
-          </View>
-        ) : (
-          // Image preview controls
-          <View style={styles.previewControlsContainer}>
-            {isAnalyzing ? (
-              <View style={styles.analyzingContainer}>
-                <ActivityIndicator size="large" color={colors.primary[500]} />
-                <Text style={styles.analyzingText}>
-                  {analysisComplete ? 'Analysis complete!' : 'Analyzing soil sample...'}
-                </Text>
-              </View>
-            ) : (
-              <>
-                <Button
-                  title="Retake"
-                  variant="outline"
-                  onPress={retakePicture}
-                  icon={<ImageIcon size={20} color={colors.primary[500]} />}
-                  style={styles.previewButton}
-                />
-                <Button
-                  title="Analyze"
-                  onPress={analyzeImage}
-                  icon={<Upload size={20} color={colors.white} />}
-                  style={styles.previewButton}
-                />
-              </>
-            )}
-          </View>
-        )}
-      </View>
+      {cameraMode === 'phone' && (
+        <Animated.View style={[styles.cameraContainer, { opacity: fadeAnim }]}>
+          <Camera
+            style={styles.camera}
+            type={type}
+            ref={(ref) => setCamera(ref)}
+          >
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={styles.flipButton}
+                onPress={handleFlipCamera}
+              >
+                <Text style={styles.flipButtonText}>Flip</Text>
+              </TouchableOpacity>
+            </View>
+          </Camera>
+        </Animated.View>
+      )}
+      
+      {cameraMode === 'external' && renderExternalCameraPlaceholder()}
+      
+      {cameraMode === 'phone' && (
+        <View style={styles.controlsContainer}>
+          {!capturedImage ? (
+            <View style={styles.captureButtonContainer}>
+              <TouchableOpacity 
+                style={styles.captureButton}
+                onPress={handleStartScan}
+              >
+                <View style={styles.captureButtonInner} />
+              </TouchableOpacity>
+              <Text style={styles.captureText}>Tap to capture soil image</Text>
+            </View>
+          ) : (
+            <View style={styles.previewControlsContainer}>
+              {isAnalyzing ? (
+                <View style={styles.analyzingContainer}>
+                  <ActivityIndicator size="large" color={colors.primary[500]} />
+                  <Text style={styles.analyzingText}>
+                    {analysisComplete ? 'Analysis complete!' : 'Analyzing soil sample...'}
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  <Button
+                    title="Retake"
+                    variant="outline"
+                    onPress={retakePicture}
+                    icon={<ImageIcon size={20} color={colors.primary[500]} />}
+                    style={styles.previewButton}
+                  />
+                  <Button
+                    title="Analyze"
+                    onPress={analyzeImage}
+                    icon={<Upload size={20} color={colors.white} />}
+                    style={styles.previewButton}
+                  />
+                </>
+              )}
+            </View>
+          )}
+        </View>
+      )}
       
       {!isConnected && (
         <View style={styles.offlineContainer}>
@@ -321,6 +411,69 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.xl,
+  },
+  selectionContainer: {
+    flex: 1,
+    backgroundColor: colors.white,
+    padding: spacing.xl,
+  },
+  selectionTitle: {
+    ...typography.headingLarge,
+    color: colors.neutral[900],
+    marginBottom: spacing.xs,
+  },
+  selectionSubtitle: {
+    ...typography.bodyLarge,
+    color: colors.neutral[600],
+    marginBottom: spacing.xl,
+  },
+  cameraOptionsContainer: {
+    gap: spacing.md,
+  },
+  cameraOption: {
+    backgroundColor: colors.neutral[50],
+    borderRadius: spacing.md,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.neutral[200],
+  },
+  cameraOptionContent: {
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  cameraOptionTitle: {
+    ...typography.headingSmall,
+    color: colors.neutral[900],
+  },
+  cameraOptionDescription: {
+    ...typography.bodyMedium,
+    color: colors.neutral[600],
+    textAlign: 'center',
+  },
+  externalCameraContainer: {
+    flex: 1,
+    backgroundColor: colors.white,
+    padding: spacing.xl,
+    justifyContent: 'center',
+  },
+  externalCameraCard: {
+    alignItems: 'center',
+    padding: spacing.xl,
+    gap: spacing.md,
+  },
+  externalCameraTitle: {
+    ...typography.headingMedium,
+    color: colors.neutral[900],
+    textAlign: 'center',
+  },
+  externalCameraText: {
+    ...typography.bodyLarge,
+    color: colors.neutral[600],
+    textAlign: 'center',
+    marginBottom: spacing.md,
+  },
+  retryButton: {
+    marginTop: spacing.sm,
   },
   cameraContainer: {
     flex: 1,
@@ -344,10 +497,6 @@ const styles = StyleSheet.create({
   flipButtonText: {
     color: colors.white,
     ...typography.labelMedium,
-  },
-  capturedImage: {
-    flex: 1,
-    resizeMode: 'cover',
   },
   controlsContainer: {
     backgroundColor: colors.black,
@@ -407,15 +556,19 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   permissionButton: {
-    minWidth: 200,
+    marginTop: spacing.md,
   },
   offlineContainer: {
-    backgroundColor: colors.warning[500],
+    backgroundColor: colors.warning[100],
     padding: spacing.md,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   offlineText: {
-    ...typography.bodyMedium,
-    color: colors.white,
+    ...typography.bodySmall,
+    color: colors.warning[800],
     textAlign: 'center',
   },
 });

@@ -6,6 +6,7 @@ import {
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { getAnalytics, isSupported } from 'firebase/analytics';
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
@@ -31,6 +32,8 @@ export const auth =
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
-export const analytics = null;
+export const analytics = Platform.OS === 'web' 
+  ? isSupported().then(yes => yes ? getAnalytics(app) : null)
+  : null;
 
 export default app;

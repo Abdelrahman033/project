@@ -1,106 +1,151 @@
 /**
- * Color palette for the SoilSense AI app
+ * Color palette for the Soil Pulse app
+ * Natural green-based theme reflecting agricultural and environmental identity
  */
 
 export const colors = {
-  // Primary colors
+  // Primary colors - Natural green
   primary: {
-    50: '#E6F3E6',
-    100: '#C2E0C2',
-    200: '#9FCE9F',
-    300: '#7CBB7C',
-    400: '#59A859',
-    500: '#458945', // Main primary
-    600: '#376A36',
-    700: '#294C28',
-    800: '#1A2D19',
-    900: '#0C0F0B',
+    50: '#F0F7F4',
+    100: '#DCEFE6',
+    200: '#B8DFD0',
+    300: '#8CCFB8',
+    400: '#5EBF9F',
+    500: '#3C7A57', // Main primary color
+    600: '#2E5F43',
+    700: '#234A34',
+    800: '#1A3727',
+    900: '#12251B',
   },
   
-  // Earth tones
+  // Earth tones - Warm browns
   earth: {
-    50: '#F9F5F0',
-    100: '#F0E6D8',
-    200: '#E6D7C3',
-    300: '#D9C4A8',
-    400: '#C3A77C',
-    500: '#A88A5D', // Main earth
-    600: '#8A6E45',
-    700: '#6D5534',
-    800: '#503F26',
-    900: '#332916',
+    50: '#FDF8F6',
+    100: '#F2E8E5',
+    200: '#EADBD0',
+    300: '#E6D5CB',
+    400: '#E3C3A8',
+    500: '#D4A373', // Main earth tone
+    600: '#B08968',
+    700: '#8C6D4D',
+    800: '#6F563D',
+    900: '#5A4730',
   },
   
-  // Secondary/Accent
+  // Accent - Warm yellow
   accent: {
-    50: '#FFF8E1',
-    100: '#FFECB3',
-    200: '#FFE082',
-    300: '#FFD54F',
-    400: '#FFCA28',
-    500: '#FFC107', // Main accent
-    600: '#FFB300',
-    700: '#FFA000',
-    800: '#FF8F00',
-    900: '#FF6F00',
+    50: '#FFFBEB',
+    100: '#FEF3C7',
+    200: '#FDE68A',
+    300: '#FCD34D',
+    400: '#FBBF24',
+    500: '#F59E0B', // Main accent
+    600: '#D97706',
+    700: '#B45309',
+    800: '#92400E',
+    900: '#78350F',
   },
   
-  // Semantic colors
+  // Success - Green
   success: {
-    50: '#E8F5E9',
-    100: '#C8E6C9',
-    200: '#A5D6A7',
-    300: '#81C784',
-    400: '#66BB6A',
-    500: '#4CAF50', // Main success
-    600: '#43A047',
-    700: '#388E3C',
-    800: '#2E7D32',
-    900: '#1B5E20',
+    50: '#F0FDF4',
+    100: '#DCFCE7',
+    200: '#BBF7D0',
+    300: '#86EFAC',
+    400: '#4ADE80',
+    500: '#22C55E',
+    600: '#16A34A',
+    700: '#15803D',
+    800: '#166534',
+    900: '#14532D',
   },
   
+  // Warning - Warm orange
   warning: {
-    50: '#FFF3E0',
-    100: '#FFE0B2',
-    200: '#FFCC80',
-    300: '#FFB74D',
-    400: '#FFA726',
-    500: '#FF9800', // Main warning
-    600: '#FB8C00',
-    700: '#F57C00',
-    800: '#EF6C00',
-    900: '#E65100',
+    50: '#FFFBEB',
+    100: '#FEF3C7',
+    200: '#FDE68A',
+    300: '#FCD34D',
+    400: '#FBBF24',
+    500: '#F59E0B',
+    600: '#D97706',
+    700: '#B45309',
+    800: '#92400E',
+    900: '#78350F',
   },
   
+  // Error - Red
   error: {
-    50: '#FFEBEE',
-    100: '#FFCDD2',
-    200: '#EF9A9A',
-    300: '#E57373',
-    400: '#EF5350',
-    500: '#F44336', // Main error
-    600: '#E53935',
-    700: '#D32F2F',
-    800: '#C62828',
-    900: '#B71C1C',
+    50: '#FEF2F2',
+    100: '#FEE2E2',
+    200: '#FECACA',
+    300: '#FCA5A5',
+    400: '#F87171',
+    500: '#EF4444',
+    600: '#DC2626',
+    700: '#B91C1C',
+    800: '#991B1B',
+    900: '#7F1D1D',
   },
   
-  // Neutral tones
+  // Neutral tones - Cool grays
   neutral: {
-    50: '#FAFAFA',
-    100: '#F5F5F5',
-    200: '#EEEEEE',
-    300: '#E0E0E0',
-    400: '#BDBDBD',
-    500: '#9E9E9E',
-    600: '#757575',
-    700: '#616161',
-    800: '#424242',
-    900: '#212121',
+    50: '#F9FAFB',
+    100: '#F3F4F6',
+    200: '#E5E7EB',
+    300: '#D1D5DB',
+    400: '#9CA3AF',
+    500: '#6B7280',
+    600: '#4B5563',
+    700: '#374151',
+    800: '#1F2937',
+    900: '#111827',
   },
   
   // Base colors
   white: '#FFFFFF',
   black: '#000000',
   transparent: 'transparent',
+  
+  // Semantic colors for specific UI elements
+  background: {
+    primary: '#FFFFFF',
+    secondary: '#F4F4F4',
+    tertiary: '#F0F7F4',
+  },
+  
+  border: {
+    light: '#E5E7EB',
+    medium: '#D1D5DB',
+    dark: '#9CA3AF',
+  },
+  
+  text: {
+    primary: '#1F2937',
+    secondary: '#4B5563',
+    tertiary: '#6B7280',
+    inverse: '#FFFFFF',
+  },
+  
+  // Interactive elements
+  button: {
+    primary: {
+      background: '#3C7A57',
+      text: '#FFFFFF',
+      border: '#2E5F43',
+    },
+    secondary: {
+      background: '#F0F7F4',
+      text: '#3C7A57',
+      border: '#B8DFD0',
+    },
+  },
+  
+  // Status indicators
+  status: {
+    active: '#3C7A57',
+    inactive: '#9CA3AF',
+    pending: '#F59E0B',
+    error: '#EF4444',
+  },
 };

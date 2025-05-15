@@ -1,67 +1,90 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Button } from 'react-native';
-import { auth, db } from '@/config/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { useUser } from '@/contexts/UserContext';
+import { uploadProfileImage } from '@/utils/storage';
+import { colors, spacing, typography } from '@/theme';
 
 export default function TestFirebase() {
-  const [testResult, setTestResult] = useState<string>('Testing...');
-  const [userData, setUserData] = useState<any>(null);
+  const { user, signIn, signOut, updateUser } = useUser();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [testResult, setTestResult] = useState<string>('');
 
-  const testFirebaseConnection = async () => {
+  const testAuth = async () => {
     try {
-      // Test 1: Check if auth is initialized
-      if (!auth) {
-        throw new Error('Firebase Auth not initialized');
-      }
-      
-      // Test 2: Check if Firestore is initialized
-      if (!db) {
-        throw new Error('Firestore not initialized');
-      }
-
-      // Test 3: Try to get current user
-      const currentUser = auth.currentUser;
-      if (currentUser) {
-        // Test 4: Try to read from Firestore
-        const userDocRef = doc(db, 'users', currentUser.uid);
-        const docSnap = await getDoc(userDocRef);
-        
-        if (docSnap.exists()) {
-          setUserData(docSnap.data());
-          setTestResult('✅ All Firebase tests passed!');
-        } else {
-          setTestResult('⚠️ User document not found in Firestore');
-        }
-      } else {
-        setTestResult('⚠️ No user is currently signed in');
-      }
-    } catch (error) {
-      setTestResult(`❌ Error: ${error.message}`);
+      setTestResult('Testing authentication...');
+      await signIn(email, password);
+      setTestResult('Authentication successful!');
+    } catch (error: any) {
+      setTestResult(`Authentication failed: ${error?.message || 'Unknown error'}`);
     }
   };
 
-  useEffect(() => {
-    testFirebaseConnection();
-  }, []);
+  const testUpdateUser = async () => {
+    try {
+      setTestResult('Testing user update...');
+      await updateUser({ name: 'Test User Updated' });
+      setTestResult('User update successful!');
+    } catch (error: any) {
+      setTestResult(`User update failed: ${error?.message || 'Unknown error'}`);
+    }
+  };
+
+  const testSignOut = async () => {
+    try {
+      setTestResult('Testing sign out...');
+      await signOut();
+      setTestResult('Sign out successful!');
+    } catch (error: any) {
+      setTestResult(`Sign out failed: ${error?.message || 'Unknown error'}`);
+    }
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Firebase Connection Test</Text>
-      <Text style={styles.result}>{testResult}</Text>
-      
-      {userData && (
-        <View style={styles.userData}>
-          <Text style={styles.subtitle}>User Data:</Text>
-          <Text>Name: {userData.name || 'N/A'}</Text>
-          <Text>Email: {userData.email || 'N/A'}</Text>
-          <Text>Farm: {userData.farm || 'N/A'}</Text>
+      <Text style={styles.title}>Firebase Integration Test</Text>
+
+      {!user ? (
+        <View style={styles.authContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
+          <TouchableOpacity style={styles.button} onPress={testAuth}>
+            <Text style={styles.buttonText}>Test Sign In</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.userContainer}>
+          <Text style={styles.userInfo}>Logged in as: {user.email}</Text>
+          <Text style={styles.userInfo}>Name: {user.name}</Text>
+          <Text style={styles.userInfo}>Role: {user.role}</Text>
+          
+          <TouchableOpacity style={styles.button} onPress={testUpdateUser}>
+            <Text style={styles.buttonText}>Test Update User</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.button} onPress={testSignOut}>
+            <Text style={styles.buttonText}>Test Sign Out</Text>
+          </TouchableOpacity>
         </View>
       )}
 
-      <Button 
-        title="Run Test Again" 
-        onPress={testFirebaseConnection}
-      />
+      {testResult ? (
+        <View style={styles.resultContainer}>
+          <Text style={styles.resultText}>{testResult}</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -69,27 +92,50 @@ export default function TestFirebase() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#fff',
+    padding: spacing.lg,
+    backgroundColor: colors.neutral[100],
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
+    ...typography.h1,
+    color: colors.neutral[900],
+    marginBottom: spacing.lg,
+    textAlign: 'center',
   },
-  result: {
-    fontSize: 18,
-    marginBottom: 20,
+  authContainer: {
+    gap: spacing.md,
   },
-  userData: {
-    marginTop: 20,
-    padding: 15,
-    backgroundColor: '#f5f5f5',
+  input: {
+    backgroundColor: colors.white,
+    padding: spacing.md,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.neutral[300],
+  },
+  button: {
+    backgroundColor: colors.primary[500],
+    padding: spacing.md,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonText: {
+    ...typography.button,
+    color: colors.white,
+  },
+  userContainer: {
+    gap: spacing.md,
+  },
+  userInfo: {
+    ...typography.body1,
+    color: colors.neutral[700],
+  },
+  resultContainer: {
+    marginTop: spacing.lg,
+    padding: spacing.md,
+    backgroundColor: colors.neutral[200],
     borderRadius: 8,
   },
-  subtitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
+  resultText: {
+    ...typography.body2,
+    color: colors.neutral[900],
   },
 }); 

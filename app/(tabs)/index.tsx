@@ -9,11 +9,10 @@ import { SensorReadings } from '@/components/SensorReadings';
 import { colors, spacing, typography } from '@/theme';
 import { useRouter, Href } from 'expo-router';
 import { SoilAnalysisResult } from '@/types';
-import { Camera, BarChart2, AlertCircle, Calendar, MapPin, TrendingUp, Sun, Cloud, Droplets, Clock, Settings } from 'lucide-react-native';
+import { Camera, BarChart2, AlertCircle, Calendar, MapPin, TrendingUp, Sun, Cloud, Droplets, Clock, Settings, User } from 'lucide-react-native';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import Svg, { Circle, Text as SvgText } from 'react-native-svg';
-import { useUser } from '../context/UserContext';
-import { ProfileImage } from '@/components/ProfileImage';
+import { useUser } from '@/contexts/UserContext';
 
 // Types
 interface UserProfile {
@@ -202,43 +201,43 @@ const WelcomeBanner = () => {
   return (
     <View style={styles.welcomeSection}>
       <View style={styles.welcomeHeader}>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={styles.welcomeText}>Welcome back,</Text>
           <Text style={styles.nameText}>{user?.name || 'Guest'}</Text>
+          {user?.farmName && (
+            <Text style={styles.farmText}>{user.farmName}</Text>
+          )}
+          {user?.location && (
+            <View style={styles.locationContainer}>
+              <MapPin size={16} color={colors.white} />
+              <Text style={styles.locationText}>{user.location}</Text>
+            </View>
+          )}
         </View>
         <TouchableOpacity 
           style={styles.profileButton}
           onPress={() => router.push('/profile')}
+          activeOpacity={0.8}
         >
-          <ProfileImage size={48} />
+          <View style={styles.avatarShadow}>
+            <User size={28} color={colors.white} />
+          </View>
         </TouchableOpacity>
       </View>
       
-      <View style={styles.farmInfo}>
-        {user?.farmName && (
-          <Text style={styles.farmText}>{user.farmName}</Text>
-        )}
-        {user?.location && (
-          <View style={styles.locationContainer}>
-            <MapPin size={16} color={colors.white} />
-            <Text style={styles.locationText}>{user.location}</Text>
-          </View>
-        )}
-      </View>
-
       <View style={styles.quickStats}>
         <View style={styles.statItem}>
-          <Sun size={20} color={colors.white} />
+          <Sun size={22} color={colors.white} />
           <Text style={styles.statValue}>28°C</Text>
           <Text style={styles.statLabel}>Temperature</Text>
         </View>
         <View style={styles.statItem}>
-          <Cloud size={20} color={colors.white} />
+          <Cloud size={22} color={colors.white} />
           <Text style={styles.statValue}>65%</Text>
           <Text style={styles.statLabel}>Humidity</Text>
         </View>
         <View style={styles.statItem}>
-          <Droplets size={20} color={colors.white} />
+          <Droplets size={22} color={colors.white} />
           <Text style={styles.statValue}>Good</Text>
           <Text style={styles.statLabel}>Soil Moisture</Text>
         </View>
@@ -253,26 +252,30 @@ const QuickActions = ({ actions }: { actions: QuickAction[] }) => {
   const getIcon = (iconName: string) => {
     switch (iconName) {
       case 'camera':
-        return <Camera size={24} color={colors.primary[500]} />;
+        return <Camera size={28} color={colors.primary[500]} />;
       case 'clock':
-        return <Clock size={24} color={colors.warning[500]} />;
+        return <Clock size={28} color={colors.warning[500]} />;
       case 'settings':
-        return <Settings size={24} color={colors.neutral[700]} />;
+        return <Settings size={28} color={colors.neutral[700]} />;
       default:
         return null;
     }
   };
   
   return (
-    <View style={styles.quickActionsContainer}>
+    <View style={styles.quickActionsRow}>
       {actions.map((action) => (
         <TouchableOpacity
           key={action.id}
-          style={styles.quickActionButton}
+          style={styles.quickActionCard}
           onPress={() => router.push(action.route)}
+          activeOpacity={0.85}
         >
-          {getIcon(action.icon)}
-          <Text style={styles.quickActionText}>{action.title}</Text>
+          <View style={[styles.quickActionIconWrap, { backgroundColor: action.color + '22' }]}> 
+            {getIcon(action.icon)}
+          </View>
+          <Text style={styles.quickActionTitle}>{action.title}</Text>
+          <Text style={styles.quickActionDesc}>{action.description}</Text>
         </TouchableOpacity>
       ))}
     </View>
@@ -280,90 +283,63 @@ const QuickActions = ({ actions }: { actions: QuickAction[] }) => {
 };
 
 const FarmHealthSummary = ({ metrics }: { metrics: FarmHealthMetrics }) => {
-  const screenWidth = Dimensions.get('window').width - spacing.md * 4;
-  
-  const weeklyData = {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    datasets: [
-      {
-        data: metrics.weeklyScans,
-        color: (opacity = 1) => colors.primary[500],
-        strokeWidth: 2
-      }
-    ]
-  };
-
-  const nutrientData = {
-    labels: metrics.nutrientLevels.labels,
-    datasets: [
-      {
-        data: metrics.nutrientLevels.datasets[0].data
-      }
-    ]
-  };
-
   return (
-    <Card style={styles.healthCard}>
-      <View style={styles.healthCardHeader}>
-        <Text style={styles.healthCardTitle}>Farm Health Status</Text>
-        <Text style={styles.lastScanText}>Last scan: {metrics.lastScanDate}</Text>
+    <Card style={styles.farmHealthCard}>
+      <View style={styles.healthHeaderRow}>
+        <Text style={styles.healthTitle}>Farm Health</Text>
+        <View style={styles.lastScanBadge}>
+          <Clock size={14} color={colors.primary[500]} />
+          <Text style={styles.lastScanText}>Last Scan: {metrics.lastScanDate}</Text>
+        </View>
       </View>
-      
-      <View style={styles.chartContainer}>
-        <Text style={styles.chartTitle}>Weekly Scan Activity</Text>
-        <LineChart
-          data={weeklyData}
-          width={screenWidth}
-          height={180}
-          chartConfig={{
-            backgroundColor: colors.white,
-            backgroundGradientFrom: colors.white,
-            backgroundGradientTo: colors.white,
-            decimalPlaces: 0,
-            color: (opacity = 1) => colors.primary[500],
-            labelColor: (opacity = 1) => colors.neutral[800],
-            style: {
-              borderRadius: 16
-            },
-            propsForDots: {
-              r: '6',
-              strokeWidth: '2',
-              stroke: colors.primary[500]
-            }
-          }}
-          bezier
-          style={styles.chart}
-        />
-      </View>
-
-      <View style={styles.chartContainer}>
-        <Text style={styles.chartTitle}>Nutrient Levels</Text>
-        <BarChart
-          data={nutrientData}
-          width={screenWidth}
-          height={180}
-          yAxisSuffix=""
-          yAxisLabel=""
-          chartConfig={{
-            backgroundColor: colors.white,
-            backgroundGradientFrom: colors.white,
-            backgroundGradientTo: colors.white,
-            decimalPlaces: 1,
-            color: (opacity = 1) => colors.primary[500],
-            labelColor: (opacity = 1) => colors.neutral[800],
-            style: {
-              borderRadius: 16
-            },
-            barPercentage: 0.5
-          }}
-          style={styles.chart}
-        />
-      </View>
-      
-      <View style={styles.healthStatsContainer}>
-        <HealthStat value={metrics.totalScans} label="Total Scans" />
-        <HealthStat value={metrics.activeAlerts} label="Alerts" />
-        <HealthStat value={metrics.averageScanInterval} label="Days Avg" />
+      <View style={styles.healthChartsRow}>
+        <View style={styles.chartBlock}>
+          <Text style={styles.chartLabel}>Weekly Scans</Text>
+          <BarChart
+            data={{
+              labels: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
+              datasets: [{ data: metrics.weeklyScans }],
+            }}
+            width={140}
+            height={80}
+            yAxisLabel={''}
+            yAxisSuffix={''}
+            chartConfig={{
+              backgroundGradientFrom: colors.white,
+              backgroundGradientTo: colors.white,
+              fillShadowGradient: colors.primary[500],
+              fillShadowGradientOpacity: 0.2,
+              color: () => colors.primary[500],
+              labelColor: () => colors.neutral[500],
+              barPercentage: 0.6,
+            }}
+            style={styles.chartStyle}
+            withInnerLines={false}
+            withHorizontalLabels={false}
+            fromZero
+          />
+        </View>
+        <View style={styles.chartDivider} />
+        <View style={styles.chartBlock}>
+          <Text style={styles.chartLabel}>Nutrients</Text>
+          <LineChart
+            data={metrics.nutrientLevels}
+            width={140}
+            height={80}
+            yAxisLabel={''}
+            chartConfig={{
+              backgroundGradientFrom: colors.white,
+              backgroundGradientTo: colors.white,
+              color: () => colors.success[500],
+              labelColor: () => colors.neutral[500],
+              propsForDots: { r: '3', strokeWidth: '2', stroke: colors.success[500] },
+            }}
+            style={styles.chartStyle}
+            withInnerLines={false}
+            withHorizontalLabels={false}
+            fromZero
+          />
+        </View>
       </View>
     </Card>
   );
@@ -472,85 +448,56 @@ const RecentAnalyses = ({ analyses, onAnalysisPress }: {
   onAnalysisPress: (id: string) => void;
 }) => {
   const router = useRouter();
-  
   return (
-    <View style={styles.recentSection}>
-      <View style={styles.sectionHeader}>
-        <View>
-          <Text style={styles.sectionTitle}>Recent Analyses</Text>
-          <Text style={styles.sectionSubtitle}>Latest soil health insights</Text>
-        </View>
-        <TouchableOpacity 
+    <View style={styles.recentAnalysesSection}>
+      <View style={styles.recentHeaderRow}>
+        <Text style={styles.sectionTitle}>Recent Analyses</Text>
+        <TouchableOpacity
           style={styles.viewAllButton}
           onPress={() => router.push('/recent')}
+          activeOpacity={0.8}
         >
           <Text style={styles.viewAllText}>View All</Text>
-          <TrendingUp size={16} color={colors.primary[500]} />
         </TouchableOpacity>
       </View>
-      
-      <View style={styles.analysesGrid}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.analysesCarousel}>
         {analyses.map((analysis) => (
           <TouchableOpacity
             key={analysis.id}
-            style={styles.analysisCard}
+            style={styles.analysisCardWrap}
+            activeOpacity={0.92}
             onPress={() => onAnalysisPress(analysis.id)}
           >
-            <Image 
-              source={{ uri: analysis.imageUrl }} 
-              style={styles.analysisImage}
-            />
-            <View style={styles.analysisContent}>
-              <View style={styles.analysisHeader}>
-                <View style={styles.analysisStatus}>
-                  <SeverityIndicator level={analysis.disease.severity} />
-                  <Text style={styles.analysisDate}>
-                    {new Date(analysis.timestamp).toLocaleDateString()}
-                  </Text>
-                </View>
-                <View style={[
-                  styles.healthBadge,
-                  { backgroundColor: analysis.soilHealth === 'good' ? colors.success[100] : 
-                    analysis.soilHealth === 'fair' ? colors.warning[100] : colors.error[100] }
-                ]}>
-                  <Text style={[
-                    styles.healthText,
-                    { color: analysis.soilHealth === 'good' ? colors.success[700] : 
-                      analysis.soilHealth === 'fair' ? colors.warning[700] : colors.error[700] }
-                  ]}>
+            <View style={styles.analysisCardEnhanced}>
+              <Image source={{ uri: analysis.imageUrl }} style={styles.analysisImageEnhanced} />
+              <View style={styles.analysisBadgeRow}>
+                <View style={[styles.healthBadge, { backgroundColor: analysis.soilHealth === 'good' ? colors.success[100] : analysis.soilHealth === 'fair' ? colors.warning[100] : colors.error[100] }]}> 
+                  <Text style={[styles.healthText, { color: analysis.soilHealth === 'good' ? colors.success[700] : analysis.soilHealth === 'fair' ? colors.warning[700] : colors.error[700] }]}> 
                     {analysis.soilHealth.charAt(0).toUpperCase() + analysis.soilHealth.slice(1)}
                   </Text>
                 </View>
+                {!analysis.isSynced && (
+                  <View style={styles.offlineBadge}><Text style={styles.offlineBadgeText}>Offline</Text></View>
+                )}
               </View>
-              
-              <Text style={styles.diseaseType}>
-                {analysis.disease.type.split('_').map(word => 
-                  word.charAt(0).toUpperCase() + word.slice(1)
-                ).join(' ')}
-              </Text>
-              
-              <View style={styles.nutrientGrid}>
-                <View style={styles.nutrientItem}>
-                  <Text style={styles.nutrientLabel}>N</Text>
-                  <Text style={styles.nutrientValue}>{analysis.nutrients.nitrogen}</Text>
+              <View style={styles.analysisContentEnhanced}>
+                <Text style={styles.diseaseType}>{analysis.disease.type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</Text>
+                <View style={styles.analysisMetaRow}>
+                  <Text style={styles.analysisDate}>{new Date(analysis.timestamp).toLocaleDateString()}</Text>
+                  <Text style={styles.analysisConfidence}>{Math.round(analysis.disease.confidence * 100)}% conf.</Text>
                 </View>
-                <View style={styles.nutrientItem}>
-                  <Text style={styles.nutrientLabel}>P</Text>
-                  <Text style={styles.nutrientValue}>{analysis.nutrients.phosphorus}</Text>
+                <View style={styles.nutrientGridEnhanced}>
+                  <View style={styles.nutrientItem}><Text style={styles.nutrientLabel}>N</Text><Text style={styles.nutrientValue}>{analysis.nutrients.nitrogen}</Text></View>
+                  <View style={styles.nutrientItem}><Text style={styles.nutrientLabel}>P</Text><Text style={styles.nutrientValue}>{analysis.nutrients.phosphorus}</Text></View>
+                  <View style={styles.nutrientItem}><Text style={styles.nutrientLabel}>K</Text><Text style={styles.nutrientValue}>{analysis.nutrients.potassium}</Text></View>
+                  <View style={styles.nutrientItem}><Text style={styles.nutrientLabel}>pH</Text><Text style={styles.nutrientValue}>{analysis.nutrients.ph}</Text></View>
                 </View>
-                <View style={styles.nutrientItem}>
-                  <Text style={styles.nutrientLabel}>K</Text>
-                  <Text style={styles.nutrientValue}>{analysis.nutrients.potassium}</Text>
-                </View>
-                <View style={styles.nutrientItem}>
-                  <Text style={styles.nutrientLabel}>pH</Text>
-                  <Text style={styles.nutrientValue}>{analysis.nutrients.ph}</Text>
-                </View>
+                <Text style={styles.recommendationText} numberOfLines={2}>{analysis.recommendations[0]}</Text>
               </View>
             </View>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
     </View>
   );
 };
@@ -576,8 +523,9 @@ export default function HomeScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={colors.primary[500]} />
         }
+        showsVerticalScrollIndicator={false}
       >
         <WelcomeBanner />
         
@@ -598,10 +546,12 @@ export default function HomeScreen() {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Sensor Readings</Text>
-          <SensorReadings 
-            soilMoisture={68}
-            airHumidity={55}
-          />
+            <SensorReadings 
+              soilMoisture={68}
+              airHumidity={55}
+              temperature={28}
+              windSpeed={12}
+            />
           </View>
           
           <View style={styles.section}>
@@ -683,6 +633,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
+  avatarShadow: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: colors.neutral[900],
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+  },
   mainContent: {
     padding: spacing.md,
   },
@@ -698,7 +658,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
   },
-  quickActionsContainer: {
+  quickActionsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: spacing.md,
@@ -707,7 +667,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.sm,
   },
-  quickActionButton: {
+  quickActionCard: {
     flex: 1,
     alignItems: "center",
     padding: spacing.sm,
@@ -715,9 +675,21 @@ const styles = StyleSheet.create({
     borderRadius: spacing.sm,
     gap: spacing.xs,
   },
-  quickActionText: {
+  quickActionIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  quickActionTitle: {
     ...typography.labelMedium,
     color: colors.neutral[800],
+    textAlign: "center",
+  },
+  quickActionDesc: {
+    ...typography.bodySmall,
+    color: colors.neutral[600],
     textAlign: "center",
   },
   healthCard: {
@@ -756,7 +728,7 @@ const styles = StyleSheet.create({
     color: colors.neutral[600],
     marginTop: spacing.xxs,
   },
-  recentSection: {
+  recentAnalysesSection: {
     marginTop: spacing.md,
   },
   sectionHeader: {
@@ -961,5 +933,125 @@ const styles = StyleSheet.create({
   chart: {
     marginVertical: spacing.xs,
     borderRadius: spacing.sm,
+  },
+  farmHealthCard: {
+    marginBottom: spacing.md,
+    padding: spacing.md,
+  },
+  healthHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  healthTitle: {
+    ...typography.headingSmall,
+    color: colors.neutral[800],
+  },
+  lastScanBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+    padding: spacing.xs,
+    borderRadius: spacing.sm,
+    backgroundColor: colors.primary[50],
+  },
+  healthChartsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  chartBlock: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  chartLabel: {
+    ...typography.labelMedium,
+    color: colors.neutral[800],
+    marginBottom: spacing.xs,
+  },
+  chartDivider: {
+    width: 1,
+    height: '100%',
+    backgroundColor: colors.neutral[200],
+  },
+  chartStyle: {
+    marginVertical: spacing.xs,
+    borderRadius: spacing.sm,
+  },
+  analysesCarousel: {
+    gap: spacing.md,
+  },
+  analysisCardWrap: {
+    width: 220,
+    marginRight: spacing.md,
+  },
+  analysisCardEnhanced: {
+    backgroundColor: colors.white,
+    borderRadius: spacing.md,
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: colors.neutral[900],
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    marginBottom: spacing.sm,
+  },
+  analysisImageEnhanced: {
+    width: '100%',
+    height: 90,
+    borderTopLeftRadius: spacing.md,
+    borderTopRightRadius: spacing.md,
+  },
+  analysisBadgeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+    marginTop: -spacing.md,
+    zIndex: 2,
+  },
+  offlineBadge: {
+    backgroundColor: colors.warning[500],
+    borderRadius: spacing.xs,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+  },
+  offlineBadgeText: {
+    ...typography.labelSmall,
+    color: colors.white,
+  },
+  analysisContentEnhanced: {
+    padding: spacing.md,
+  },
+  analysisMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  analysisConfidence: {
+    ...typography.bodySmall,
+    color: colors.neutral[500],
+  },
+  nutrientGridEnhanced: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: colors.neutral[50],
+    borderRadius: spacing.sm,
+    padding: spacing.xs,
+    marginVertical: spacing.xs,
+  },
+  recommendationText: {
+    ...typography.bodySmall,
+    color: colors.neutral[700],
+    marginTop: spacing.xs,
+  },
+  recentHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+    paddingRight: spacing.sm,
   },
 });

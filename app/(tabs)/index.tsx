@@ -9,7 +9,7 @@ import { SensorReadings } from '@/components/SensorReadings';
 import { colors, spacing, typography } from '@/theme';
 import { useRouter, Href } from 'expo-router';
 import { SoilAnalysisResult } from '@/types';
-import { Camera, BarChart2, AlertCircle, Calendar, MapPin, TrendingUp, Sun, Cloud, Droplets, Clock, Settings, User } from 'lucide-react-native';
+import { Camera, BarChart2, AlertCircle, Calendar, MapPin, TrendingUp, Sun, Cloud, Droplets, Clock, Settings, User, Edit } from 'lucide-react-native';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 import { useUser } from '@/contexts/UserContext';
@@ -42,7 +42,7 @@ interface QuickAction {
   title: string;
   description: string;
   icon: string;
-  route: '/scan' | '/recent' | '/help' | '/privacy' | '/' | '/settings' | '/profile/settings';
+  route: string;
   color: string;
 }
 
@@ -89,11 +89,11 @@ const quickActions: QuickAction[] = [
   },
   {
     id: '3',
-    title: 'Settings',
-    description: 'Advanced settings',
-    icon: 'settings',
-    route: '/profile/settings',
-    color: colors.neutral[700]
+    title: 'Add Note',
+    description: 'Write field observation',
+    icon: 'edit',
+    route: '/add-note',
+    color: colors.primary[400]
   }
 ];
 
@@ -255,8 +255,8 @@ const QuickActions = ({ actions }: { actions: QuickAction[] }) => {
         return <Camera size={28} color={colors.primary[500]} />;
       case 'clock':
         return <Clock size={28} color={colors.warning[500]} />;
-      case 'settings':
-        return <Settings size={28} color={colors.neutral[700]} />;
+      case 'edit':
+        return <Edit size={28} color={colors.primary[400]} />;
       default:
         return null;
     }
@@ -612,13 +612,13 @@ const styles = StyleSheet.create({
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: spacing.xxs,
+    marginTop: spacing.xs,
   },
   locationText: {
     ...typography.bodyMedium,
     color: colors.white,
     opacity: 0.9,
-    marginLeft: spacing.xxs,
+    marginLeft: spacing.xs,
   },
   profileButton: {
     width: 48,
@@ -720,13 +720,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   healthStatValue: {
-    ...typography.headingMedium,
+    ...typography.headingSmall,
     color: colors.primary[500],
+    marginTop: spacing.xs,
   },
   healthStatLabel: {
     ...typography.bodySmall,
     color: colors.neutral[600],
-    marginTop: spacing.xxs,
+    marginTop: spacing.xs,
   },
   recentAnalysesSection: {
     marginTop: spacing.md,
@@ -740,12 +741,12 @@ const styles = StyleSheet.create({
   sectionSubtitle: {
     ...typography.bodySmall,
     color: colors.neutral[600],
-    marginTop: spacing.xxs,
+    marginTop: spacing.xs,
   },
   viewAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xxs,
+    gap: spacing.xs,
     padding: spacing.xs,
     borderRadius: spacing.sm,
     backgroundColor: colors.primary[50],
@@ -792,7 +793,7 @@ const styles = StyleSheet.create({
   },
   healthBadge: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xxs,
+    paddingVertical: spacing.xs,
     borderRadius: spacing.sm,
   },
   healthText: {
@@ -818,7 +819,7 @@ const styles = StyleSheet.create({
   nutrientLabel: {
     ...typography.labelSmall,
     color: colors.neutral[600],
-    marginBottom: spacing.xxs,
+    marginBottom: spacing.xs,
   },
   nutrientValue: {
     ...typography.headingSmall,
@@ -843,7 +844,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.xxs,
+    marginBottom: spacing.xs,
   },
   moistureBarLabel: {
     ...typography.labelSmall,
@@ -898,7 +899,7 @@ const styles = StyleSheet.create({
     ...typography.labelSmall,
     color: colors.neutral[700],
     marginTop: spacing.xs,
-    textAlign: "center",
+    textAlign: 'center',
   },
   quickStats: {
     flexDirection: 'row',
@@ -915,12 +916,12 @@ const styles = StyleSheet.create({
   statValue: {
     ...typography.headingSmall,
     color: colors.primary[500],
-    marginTop: spacing.xxs,
+    marginTop: spacing.xs,
   },
   statLabel: {
     ...typography.labelSmall,
     color: colors.neutral[600],
-    marginTop: spacing.xxs,
+    marginTop: spacing.xs,
   },
   chartContainer: {
     marginVertical: spacing.sm,
@@ -951,7 +952,7 @@ const styles = StyleSheet.create({
   lastScanBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xxs,
+    gap: spacing.xs,
     padding: spacing.xs,
     borderRadius: spacing.sm,
     backgroundColor: colors.primary[50],

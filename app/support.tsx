@@ -1,50 +1,55 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Linking, TouchableOpacity, Animated } from 'react-native';
+import React from 'react';
+import {
+  StyleSheet,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Linking,
+  Animated,
+} from 'react-native';
 import { Header } from '@/components/Header';
 import { Card } from '@/components/Card';
 import { colors, spacing, typography } from '@/theme';
-import { Phone, Mail, MessageCircle, HelpCircle, ChevronRight, LucideIcon } from 'lucide-react-native';
+import {
+  MessageCircle,
+  Phone,
+  Mail,
+  HelpCircle,
+  ChevronRight,
+  MessageSquare,
+} from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 
-interface ContactMethodProps {
-  icon: LucideIcon;
-  title: string;
-  value: string;
-  onPress: () => void;
-  color?: string;
-}
-
-interface FAQItemProps {
-  question: string;
-  answer: string;
-}
-
-// Reusable contact method component
-const ContactMethod = ({ icon: Icon, title, value, onPress, color = colors.primary[500] }: ContactMethodProps) => (
-  <TouchableOpacity onPress={onPress} style={styles.contactMethod}>
-    <View style={styles.contactIcon}>
-      <Icon size={24} color={color} />
-    </View>
-    <View style={styles.contactInfo}>
-      <Text style={styles.contactTitle}>{title}</Text>
-      <Text style={styles.contactValue}>{value}</Text>
-    </View>
-    <ChevronRight size={20} color={colors.neutral[400]} />
-  </TouchableOpacity>
-);
-
-// Reusable FAQ item component
-const FAQItem = ({ question, answer }: FAQItemProps) => (
-  <Card style={styles.faqItem}>
-    <Text style={styles.question}>{question}</Text>
-    <Text style={styles.answer}>{answer}</Text>
-  </Card>
-);
+// FAQ data
+const faqData = [
+  {
+    question: 'How do I add a new farm?',
+    answer: 'To add a new farm, go to your Profile page and click the "Add Farm" button. You\'ll need to provide the farm name, size in square meters, crops, and location. You can use your current location or enter coordinates manually.',
+  },
+  {
+    question: 'How do I interpret soil analysis results?',
+    answer: 'Soil analysis results show nutrient levels (nitrogen, phosphorus, potassium), pH level, and organic matter content. Green indicators mean optimal levels, yellow means moderate, and red indicates areas needing attention. Check our detailed guide in the Resources section.',
+  },
+  {
+    question: 'What do the alerts mean?',
+    answer: 'Alerts notify you about potential issues with your farm\'s soil health, such as nutrient deficiencies, pH imbalances, or disease risks. Each alert includes severity level and recommended actions.',
+  },
+  {
+    question: 'How accurate is the location tracking?',
+    answer: 'Our location tracking uses high-accuracy GPS when available. For best results, ensure your device\'s location services are enabled and you\'re outdoors with a clear view of the sky.',
+  },
+  {
+    question: 'Can I export my farm data?',
+    answer: 'Yes, you can export your farm data including soil analyses, trends, and reports. Go to the farm details page and use the export option in the menu.',
+  },
+];
 
 export default function SupportScreen() {
   // Fade-in animation
   const fadeAnim = new Animated.Value(0);
   
-  useEffect(() => {
+  React.useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 800,
@@ -52,80 +57,108 @@ export default function SupportScreen() {
     }).start();
   }, []);
 
-  const handlePhonePress = () => {
-    Linking.openURL('tel:+201067882339');
-  };
-
-  const handleWhatsAppPress = () => {
-    Linking.openURL('https://wa.me/201067882339');
-  };
-
-  const handleEmailPress = () => {
+  const handleEmailSupport = () => {
     Linking.openURL('mailto:support@soilpulse.com');
   };
 
+  const handleCallSupport = () => {
+    Linking.openURL('tel:+201067882339');
+  };
+
+  const handleWhatsAppSupport = () => {
+    Linking.openURL('https://wa.me/201067882339');
+  };
+
+  const router = useRouter();
+
   return (
     <View style={styles.container}>
-      <Header title="Support" showBackButton />
+      <Header 
+        title="Contact Support"
+        showBackButton
+      />
       <Animated.ScrollView 
         style={[styles.content, { opacity: fadeAnim }]}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>How can we help you?</Text>
-        <Text style={styles.description}>
-          Choose your preferred contact method or check our frequently asked questions below.
-        </Text>
-
+        {/* Contact Options */}
         <Card style={styles.contactCard}>
-          <ContactMethod
-            icon={Phone}
-            title="Call Us"
-            value="+20 106 788 2339"
-            onPress={handlePhonePress}
-          />
-          <View style={styles.divider} />
-          <ContactMethod
-            icon={MessageCircle}
-            title="Chat on WhatsApp"
-            value="Message us on WhatsApp"
-            onPress={handleWhatsAppPress}
-            color="#25D366"
-          />
-          <View style={styles.divider} />
-          <ContactMethod
-            icon={Mail}
-            title="Email Us"
-            value="support@soilpulse.com"
-            onPress={handleEmailPress}
-          />
+          <TouchableOpacity
+            style={styles.contactItem}
+            onPress={handleEmailSupport}
+          >
+            <View style={styles.contactLeft}>
+              <Mail size={24} color={colors.primary[500]} />
+              <View style={styles.contactInfo}>
+                <Text style={styles.contactTitle}>Email Support</Text>
+                <Text style={styles.contactText}>support@soilpulse.com</Text>
+              </View>
+            </View>
+            <ChevronRight size={20} color={colors.neutral[600]} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.contactItem}
+            onPress={handleCallSupport}
+          >
+            <View style={styles.contactLeft}>
+              <Phone size={24} color={colors.primary[500]} />
+              <View style={styles.contactInfo}>
+                <Text style={styles.contactTitle}>Phone Support</Text>
+                <Text style={styles.contactText}>+20 106 788 2339</Text>
+              </View>
+            </View>
+            <ChevronRight size={20} color={colors.neutral[600]} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.contactItem}
+            onPress={handleWhatsAppSupport}
+          >
+            <View style={styles.contactLeft}>
+              <MessageSquare size={24} color="#25D366" />
+              <View style={styles.contactInfo}>
+                <Text style={styles.contactTitle}>WhatsApp Chat</Text>
+                <Text style={styles.contactText}>Chat with us on WhatsApp</Text>
+              </View>
+            </View>
+            <ChevronRight size={20} color={colors.neutral[600]} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.contactItem}
+            onPress={() => router.replace('/live-chat' as any)}
+          >
+            <View style={styles.contactLeft}>
+              <MessageCircle size={24} color={colors.primary[500]} />
+              <View style={styles.contactInfo}>
+                <Text style={styles.contactTitle}>Live Chat</Text>
+                <Text style={styles.contactText}>Chat with our support team</Text>
+              </View>
+            </View>
+            <ChevronRight size={20} color={colors.neutral[600]} />
+          </TouchableOpacity>
         </Card>
 
+        {/* FAQ Section */}
         <View style={styles.faqSection}>
           <View style={styles.faqHeader}>
             <HelpCircle size={24} color={colors.primary[500]} />
             <Text style={styles.faqTitle}>Frequently Asked Questions</Text>
           </View>
-
-          <FAQItem
-            question="How do I add a new farm?"
-            answer="To add a new farm, go to the Farms tab and tap the + button. Follow the on-screen instructions to enter your farm details and location."
-          />
-
-          <FAQItem
-            question="How accurate are the soil analysis results?"
-            answer="Our soil analysis uses advanced technology to provide highly accurate results. However, we recommend regular testing to track changes over time."
-          />
-
-          <FAQItem
-            question="Can I export my farm data?"
-            answer="Yes, you can export your farm data in various formats. Go to the farm details screen and tap the export button to choose your preferred format."
-          />
-
-          <FAQItem
-            question="How often should I test my soil?"
-            answer="We recommend testing your soil at least once per growing season. However, the frequency may vary depending on your crops and farming practices."
-          />
+          <Card style={styles.faqCard}>
+            {faqData.map((faq, index) => (
+              <View key={index} style={styles.faqItem}>
+                <View style={styles.faqQuestionContainer}>
+                  <Text style={styles.question}>{faq.question}</Text>
+                </View>
+                <View style={styles.faqAnswerContainer}>
+                  <Text style={styles.answer}>{faq.answer}</Text>
+                </View>
+              </View>
+            ))}
+          </Card>
         </View>
       </Animated.ScrollView>
     </View>
@@ -143,79 +176,68 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: spacing.lg,
   },
-  title: {
-    ...typography.headingLarge,
-    color: colors.neutral[800],
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-  },
-  description: {
-    ...typography.bodyMedium,
-    color: colors.neutral[700],
-    marginBottom: spacing.xl,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
   contactCard: {
-    marginBottom: spacing.xl,
-    padding: spacing.md,
+    gap: spacing.sm,
   },
-  contactMethod: {
+  contactItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: spacing.sm,
   },
-  contactIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primary[50],
+  contactLeft: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
+    gap: spacing.sm,
   },
   contactInfo: {
-    flex: 1,
+    gap: spacing.xs,
   },
   contactTitle: {
-    ...typography.labelLarge,
-    color: colors.neutral[800],
-    marginBottom: 2,
-  },
-  contactValue: {
     ...typography.bodyMedium,
+    color: colors.neutral[900],
+  },
+  contactText: {
+    ...typography.bodySmall,
     color: colors.neutral[600],
   },
-  divider: {
-    height: 1,
-    backgroundColor: colors.neutral[200],
-    marginVertical: spacing.sm,
-  },
   faqSection: {
-    marginBottom: spacing.xl,
+    marginTop: spacing.xl,
   },
   faqHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    gap: spacing.sm,
+    marginBottom: spacing.md,
   },
   faqTitle: {
     ...typography.headingSmall,
-    color: colors.neutral[800],
-    marginLeft: spacing.sm,
+    color: colors.neutral[900],
+  },
+  faqCard: {
+    gap: spacing.md,
+    padding: spacing.md,
   },
   faqItem: {
-    marginBottom: spacing.md,
-    padding: spacing.lg,
+    backgroundColor: colors.neutral[50],
+    borderRadius: spacing.sm,
+    overflow: 'hidden',
+  },
+  faqQuestionContainer: {
+    padding: spacing.md,
+    backgroundColor: colors.primary[50],
+  },
+  faqAnswerContainer: {
+    padding: spacing.md,
   },
   question: {
-    ...typography.labelLarge,
-    color: colors.neutral[800],
-    marginBottom: spacing.sm,
+    ...typography.bodyMedium,
+    color: colors.primary[700],
+    fontWeight: '600',
   },
   answer: {
-    ...typography.bodyMedium,
+    ...typography.bodySmall,
     color: colors.neutral[700],
-    lineHeight: 24,
+    lineHeight: 20,
   },
 }); 

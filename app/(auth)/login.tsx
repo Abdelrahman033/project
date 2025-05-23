@@ -9,6 +9,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { Button } from '@/components/Button';
 import { colors, spacing, typography } from '@/theme';
@@ -16,6 +17,7 @@ import { useRouter } from 'expo-router';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/config/firebase';
+import { getDeviceInfo, saveDeviceInfo } from '@/utils/deviceManager';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -43,30 +45,45 @@ export default function LoginScreen() {
       setIsLoading(true);
       
       // Sign in with Firebase
-      await signInWithEmailAndPassword(auth, email.trim(), password);
+      const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
+      
+      // Get device info and save to Firestore
+      const deviceInfo = await getDeviceInfo();
+      const isNewDevice = await saveDeviceInfo(userCredential.user.uid, deviceInfo);
+      
+      if (isNewDevice) {
+        Alert.alert(
+          'New Device Detected',
+          `You're logging in from a new device: ${deviceInfo.modelName} (${deviceInfo.osName} ${deviceInfo.osVersion})`,
+          [{ text: 'OK' }]
+        );
+      }
       
       // Navigate to main app on successful login
       router.replace('/(tabs)');
     } catch (err: any) {
-      // Handle specific Firebase error codes
-      switch (err.code) {
-        case 'auth/invalid-email':
-          setError('Invalid email address');
-          break;
-        case 'auth/user-disabled':
-          setError('This account has been disabled');
-          break;
-        case 'auth/user-not-found':
-        case 'auth/wrong-password':
-          setError('Invalid email or password');
-          break;
-        default:
-          setError('An error occurred. Please try again.');
-      }
-      console.error(err);
+      handleLoginError(err);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleLoginError = (err: any) => {
+    switch (err.code) {
+      case 'auth/invalid-email':
+        setError('Invalid email address');
+        break;
+      case 'auth/user-disabled':
+        setError('This account has been disabled');
+        break;
+      case 'auth/user-not-found':
+      case 'auth/wrong-password':
+        setError('Invalid email or password');
+        break;
+      default:
+        setError('An error occurred. Please try again.');
+    }
+    console.error(err);
   };
 
   const navigateToRegister = () => {

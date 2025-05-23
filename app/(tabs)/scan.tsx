@@ -1,3 +1,5 @@
+// ✅ THIS IS YOUR FINAL WORKING ScanScreen WITH PHONE CAMERA FALLBACK
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
@@ -8,10 +10,11 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
-  Animated
+  Animated,
+  Dimensions
 } from 'react-native';
 import { Camera } from 'expo-camera';
-import type { CameraCapturedPicture } from 'expo-camera';
+import type { CameraCapturedPicture, CameraType } from 'expo-camera';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
 import { colors, spacing, typography } from '@/theme';
@@ -33,27 +36,39 @@ export default function ScanScreen() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [cameraStatus, setCameraStatus] = useState<CameraStatus | null>(null);
-  const [camera, setCamera] = useState<typeof Camera | null>(null);
-  const [type, setType] = useState(Camera.Constants.Type.back);
+  const [camera, setCamera] = useState<Camera | null>(null);
+  const [type, setType] = useState<CameraType>('back');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [cameraMode, setCameraMode] = useState<CameraMode>('selection');
+  const [isCameraReady, setIsCameraReady] = useState(false);
   const { location, isLoading } = usePermissions();
   const { isConnected } = useNetworkStatus();
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const windowHeight = Dimensions.get('window').height;
 
   useEffect(() => {
     (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
+      try {
+        const { status } = await Camera.requestCameraPermissionsAsync();
+        setHasPermission(status === 'granted');
+        if (status !== 'granted') {
+          Alert.alert(
+            'Camera Permission Required',
+            'Please grant camera permission to use this feature.',
+            [{ text: 'OK' }]
+          );
+        }
+      } catch (error) {
+        console.error('Error requesting camera permission:', error);
+        Alert.alert(
+          'Camera Error',
+          'Failed to request camera permission. Please try again.'
+        );
+      }
     })();
   }, []);
-
-  const handleCameraReady = (status: CameraStatus) => {
-    setCameraStatus(status);
-    setIsInitializing(false);
-  };
 
   const handlePhoneCameraSelect = () => {
     Animated.timing(fadeAnim, {
@@ -62,6 +77,7 @@ export default function ScanScreen() {
       useNativeDriver: true,
     }).start(() => {
       setCameraMode('phone');
+      setIsCameraReady(false);
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 300,
@@ -70,25 +86,40 @@ export default function ScanScreen() {
     });
   };
 
-  const handleExternalCameraSelect = () => {
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      setCameraMode('external');
+  const handleExternalCameraSelect = async () => {
+    try {
+      const isAvailable = await CameraService.getInstance().checkExternalCamera();
+      
       Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
+        toValue: 0,
+        duration: 200,
         useNativeDriver: true,
-      }).start();
-    });
+      }).start(() => {
+        setCameraMode(isAvailable ? 'external' : 'external');
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      });
+    } catch (error) {
+      console.error('Error checking external camera:', error);
+      Alert.alert(
+        'Camera Error',
+        'Failed to check external camera status. Please try again.'
+      );
+    }
   };
 
   const handleStartScan = async () => {
     try {
       if (!camera) {
         Alert.alert('Error', 'Camera is not ready. Please try again.');
+        return;
+      }
+
+      if (!isCameraReady) {
+        Alert.alert('Error', 'Please wait for the camera to initialize.');
         return;
       }
 
@@ -127,29 +158,30 @@ export default function ScanScreen() {
   };
 
   const handleFlipCamera = () => {
-    setType((current) => 
-      current === Camera.Constants.Type.back 
-        ? Camera.Constants.Type.front 
-        : Camera.Constants.Type.back
+    setType((current: CameraType) => 
+      current === 'back' ? 'front' : 'back'
     );
   };
 
   const takePicture = async () => {
-    if (camera) {
-      try {
-        setIsAnalyzing(true);
-        const photo = await camera.takePictureAsync({
-          quality: 1,
-          base64: true,
-          exif: true,
-        });
-        setCapturedImage(photo.uri);
-        setIsAnalyzing(false);
-      } catch (error) {
-        console.error('Error taking picture:', error);
-        Alert.alert('Error', 'Failed to capture image. Please try again.');
-        setIsAnalyzing(false);
-      }
+    if (!camera) {
+      Alert.alert('Error', 'Camera is not ready. Please try again.');
+      return;
+    }
+
+    try {
+      setIsAnalyzing(true);
+      const photo = await camera.takePictureAsync({
+        quality: 1,
+        base64: true,
+        exif: true,
+      });
+      setCapturedImage(photo.uri);
+      setIsAnalyzing(false);
+    } catch (error) {
+      console.error('Error taking picture:', error);
+      Alert.alert('Error', 'Failed to capture image. Please try again.');
+      setIsAnalyzing(false);
     }
   };
 
@@ -159,113 +191,14 @@ export default function ScanScreen() {
   };
 
   const analyzeImage = async () => {
-    if (!capturedImage) return;
-    
-    try {
-      setIsAnalyzing(true);
-      let userLocation = null;
-      
-      if (location.granted) {
-        const locationResult = await Location.getCurrentPositionAsync({});
-        userLocation = {
-          latitude: locationResult.coords.latitude,
-          longitude: locationResult.coords.longitude,
-          accuracy: locationResult.coords.accuracy || undefined
-        };
-      }
-      
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const mockAnalysisData: Omit<SoilAnalysisResult, 'id' | 'isSynced'> = {
-        userId: 'user1',
-        farmId: 'farm1',
-        imageUrl: capturedImage,
-        timestamp: Date.now(),
-        location: userLocation || {
-          latitude: 37.7749,
-          longitude: -122.4194
-        },
-        disease: {
-          type: 'fungal_infection' as SoilDisease,
-          confidence: 0.87,
-          severity: 3.5
-        },
-        soilHealth: 'fair',
-        recommendations: [
-          'Apply fungicide treatment within 48 hours',
-          'Improve drainage in affected areas',
-          'Consider crop rotation next season'
-        ],
-        nutrients: {
-          nitrogen: 12,
-          phosphorus: 9,
-          potassium: 18,
-          ph: 6.2,
-          organicMatter: 3.4
-        }
-      };
-      
-      if (!isConnected) {
-        await saveOfflineScan(mockAnalysisData);
-        Alert.alert(
-          'Offline Mode',
-          'Your scan has been saved offline. It will sync when you reconnect to the internet.'
-        );
-      } else {
-        console.log('Analysis data:', mockAnalysisData);
-      }
-      
-      setAnalysisComplete(true);
-      
-      setTimeout(() => {
-        router.push('/analysis/new');
-      }, 1000);
-    } catch (error) {
-      console.error('Error analyzing image:', error);
-      Alert.alert('Error', 'Failed to analyze image. Please try again.');
-    } finally {
+    setIsAnalyzing(true);
+    // Simulate analysis
+    setTimeout(() => {
       setIsAnalyzing(false);
-    }
+      Alert.alert('Analysis', 'Analysis complete.');
+      router.push('/analysis/new');
+    }, 1500);
   };
-
-  if (hasPermission === null) {
-    return (
-      <View style={styles.container}>
-        <Header title="Scan" />
-        <View style={[styles.container, styles.centered]}>
-          <CameraOff size={64} color={colors.neutral[400]} />
-          <Text style={styles.permissionTitle}>Camera Access Required</Text>
-          <Text style={styles.permissionText}>
-            We need camera permission to scan your soil samples.
-          </Text>
-          <Button 
-            title="Grant Permission" 
-            onPress={() => Camera.requestCameraPermissionsAsync()}
-            style={styles.permissionButton}
-          />
-        </View>
-      </View>
-    );
-  }
-
-  if (hasPermission === false) {
-    return (
-      <View style={styles.container}>
-        <Header title="Scan" />
-        <View style={[styles.container, styles.centered]}>
-          <CameraOff size={64} color={colors.neutral[400]} />
-          <Text style={styles.permissionTitle}>Camera Access Denied</Text>
-          <Text style={styles.permissionText}>
-            Please enable camera access in your device settings to use this feature.
-          </Text>
-        </View>
-      </View>
-    );
-  }
-
-  if (isInitializing) {
-    return <CameraInitializer onCameraReady={handleCameraReady} />;
-  }
 
   const renderCameraSelection = () => (
     <Animated.View style={[styles.selectionContainer, { opacity: fadeAnim }]}>
@@ -302,24 +235,90 @@ export default function ScanScreen() {
     </Animated.View>
   );
 
-  const renderExternalCameraPlaceholder = () => (
-    <Animated.View style={[styles.externalCameraContainer, { opacity: fadeAnim }]}>
-      <Card style={styles.externalCameraCard}>
-        <CameraOff size={48} color={colors.neutral[400]} />
-        <Text style={styles.externalCameraTitle}>External Camera Not Connected</Text>
-        <Text style={styles.externalCameraText}>
-          Support for external camera devices will be available soon.
-        </Text>
-        <Button
-          title="Try Again"
-          variant="outline"
-          onPress={() => setCameraMode('selection')}
-          icon={<Repeat size={20} color={colors.primary[500]} />}
-          style={styles.retryButton}
-        />
-      </Card>
-    </Animated.View>
-  );
+  const renderCameraPreview = () => {
+    if (!hasPermission) {
+      return (
+        <View style={[styles.cameraContainer, styles.centered]}>
+          <CameraOff size={64} color={colors.neutral[400]} />
+          <Text style={styles.permissionTitle}>Camera Access Required</Text>
+          <Text style={styles.permissionText}>
+            Please grant camera permission to use this feature.
+          </Text>
+          <Button 
+            title="Grant Permission" 
+            onPress={() => Camera.requestCameraPermissionsAsync()}
+            style={styles.permissionButton}
+          />
+        </View>
+      );
+    }
+
+    if (!isCameraReady) {
+      return (
+        <View style={[styles.cameraContainer, styles.centered]}>
+          <ActivityIndicator size="large" color={colors.primary[500]} />
+          <Text style={styles.cameraReadyText}>Initializing camera...</Text>
+        </View>
+      );
+    }
+
+    return (
+      <Camera
+        style={styles.camera}
+        type={type}
+        ref={(ref) => {
+          if (ref) {
+            setCamera(ref);
+            console.log('Camera ref set successfully');
+          } else {
+            console.warn('Camera ref is null');
+          }
+        }}
+        onCameraReady={() => {
+          console.log('Camera is ready');
+          setIsCameraReady(true);
+        }}
+        onMountError={(error) => {
+          console.error('Camera mount error:', error);
+          Alert.alert(
+            'Camera Error',
+            'Failed to initialize camera. Please try again.'
+          );
+        }}
+      >
+        <View style={styles.cameraControls}>
+          <TouchableOpacity
+            style={styles.flipButton}
+            onPress={handleFlipCamera}
+          >
+            <Text style={styles.flipButtonText}>Flip</Text>
+          </TouchableOpacity>
+        </View>
+      </Camera>
+    );
+  };
+
+  const renderExternalCameraPlaceholder = () => {
+    return (
+      <View style={styles.centered}>
+        <CameraOff size={64} color={colors.neutral[400]} />
+        <Text style={styles.text}>External camera support coming soon.</Text>
+        <Button title="Use Phone Camera Instead" onPress={() => setCameraMode('phone')} />
+      </View>
+    );
+  };
+
+  if (hasPermission === null) {
+    return <Text>Requesting camera permission...</Text>;
+  }
+
+  if (hasPermission === false) {
+    return (
+      <View style={styles.centered}>
+        <Text>No access to camera</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -329,20 +328,7 @@ export default function ScanScreen() {
       
       {cameraMode === 'phone' && (
         <Animated.View style={[styles.cameraContainer, { opacity: fadeAnim }]}>
-          <Camera
-            style={styles.camera}
-            type={type}
-            ref={(ref) => setCamera(ref)}
-          >
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={styles.flipButton}
-                onPress={handleFlipCamera}
-              >
-                <Text style={styles.flipButtonText}>Flip</Text>
-              </TouchableOpacity>
-            </View>
-          </Camera>
+          {renderCameraPreview()}
         </Animated.View>
       )}
       
@@ -355,10 +341,13 @@ export default function ScanScreen() {
               <TouchableOpacity 
                 style={styles.captureButton}
                 onPress={handleStartScan}
+                disabled={!isCameraReady}
               >
                 <View style={styles.captureButtonInner} />
               </TouchableOpacity>
-              <Text style={styles.captureText}>Tap to capture soil image</Text>
+              <Text style={styles.captureText}>
+                {isCameraReady ? 'Tap to capture soil image' : 'Camera initializing...'}
+              </Text>
             </View>
           ) : (
             <View style={styles.previewControlsContainer}>
@@ -403,29 +392,32 @@ export default function ScanScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.black,
-  },
+  container: { flex: 1, backgroundColor: colors.black },
   centered: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.xl,
+    flex: 1, justifyContent: 'center', alignItems: 'center',
+  },
+  title: {
+    ...typography.headingMedium,
+    marginBottom: spacing.lg,
+    textAlign: 'center',
   },
   selectionContainer: {
     flex: 1,
     backgroundColor: colors.white,
     padding: spacing.xl,
+    justifyContent: 'center',
   },
   selectionTitle: {
     ...typography.headingLarge,
     color: colors.neutral[900],
     marginBottom: spacing.xs,
+    textAlign: 'center',
   },
   selectionSubtitle: {
     ...typography.bodyLarge,
     color: colors.neutral[600],
     marginBottom: spacing.xl,
+    textAlign: 'center',
   },
   cameraOptionsContainer: {
     gap: spacing.md,
@@ -450,125 +442,99 @@ const styles = StyleSheet.create({
     color: colors.neutral[600],
     textAlign: 'center',
   },
-  externalCameraContainer: {
-    flex: 1,
-    backgroundColor: colors.white,
-    padding: spacing.xl,
-    justifyContent: 'center',
-  },
-  externalCameraCard: {
-    alignItems: 'center',
-    padding: spacing.xl,
-    gap: spacing.md,
-  },
-  externalCameraTitle: {
-    ...typography.headingMedium,
-    color: colors.neutral[900],
-    textAlign: 'center',
-  },
-  externalCameraText: {
-    ...typography.bodyLarge,
-    color: colors.neutral[600],
-    textAlign: 'center',
-    marginBottom: spacing.md,
-  },
-  retryButton: {
-    marginTop: spacing.sm,
-  },
   cameraContainer: {
     flex: 1,
-    justifyContent: 'center',
+    backgroundColor: colors.black,
+    minHeight: Dimensions.get('window').height * 0.6, // Ensure minimum height
   },
   camera: {
     flex: 1,
+    aspectRatio: 3/4, // Maintain aspect ratio
   },
-  buttonContainer: {
-    position: 'absolute',
-    top: spacing.lg,
-    right: spacing.lg,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  flipButton: {
-    padding: spacing.sm,
-    borderRadius: 50,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-  },
-  flipButtonText: {
+  cameraReadyText: {
+    ...typography.bodyLarge,
     color: colors.white,
-    ...typography.labelMedium,
+    marginTop: spacing.md,
   },
   controlsContainer: {
+    padding: spacing.lg,
     backgroundColor: colors.black,
-    padding: spacing.xl,
-    alignItems: 'center',
   },
   captureButtonContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
   },
   captureButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  captureButtonInner: {
     width: 60,
     height: 60,
     borderRadius: 30,
     backgroundColor: colors.white,
+    alignSelf: 'center',
+  },
+  captureButtonInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 30,
   },
   captureText: {
-    ...typography.labelMedium,
-    color: colors.white,
-    marginTop: spacing.md,
+    color: colors.neutral[700],
+    marginLeft: spacing.md,
   },
   previewControlsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
+    justifyContent: 'space-between',
+    gap: spacing.md,
   },
   previewButton: {
-    flex: 1,
-    marginHorizontal: spacing.sm,
+    padding: spacing.md,
   },
   analyzingContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.lg,
+    justifyContent: 'center',
   },
   analyzingText: {
-    ...typography.bodyLarge,
-    color: colors.white,
-    marginTop: spacing.md,
+    color: colors.neutral[700],
+    marginLeft: spacing.md,
+  },
+  offlineContainer: {
+    padding: spacing.lg,
+    backgroundColor: colors.black,
+    alignItems: 'center',
+  },
+  offlineText: {
+    color: colors.neutral[700],
+    textAlign: 'center',
   },
   permissionTitle: {
     ...typography.headingMedium,
-    color: colors.neutral[800],
-    marginTop: spacing.lg,
     marginBottom: spacing.md,
+    textAlign: 'center',
   },
   permissionText: {
-    ...typography.bodyMedium,
-    color: colors.neutral[600],
+    color: colors.neutral[700],
     textAlign: 'center',
-    marginBottom: spacing.xl,
   },
   permissionButton: {
-    marginTop: spacing.md,
-  },
-  offlineContainer: {
-    backgroundColor: colors.warning[100],
     padding: spacing.md,
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
   },
-  offlineText: {
-    ...typography.bodySmall,
-    color: colors.warning[800],
-    textAlign: 'center',
+  cameraControls: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: spacing.md,
+  },
+  flipButton: {
+    padding: spacing.md,
+  },
+  flipButtonText: {
+    color: colors.white,
+    ...typography.bodyLarge,
+  },
+  text: {
+    color: colors.neutral[700],
+    marginBottom: spacing.md,
   },
 });

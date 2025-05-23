@@ -1,38 +1,40 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useUser } from '@/contexts/UserContext';
 import { colors, spacing, typography } from '@/theme';
 import { Card } from '@/components/Card';
 import { SettingItem } from '@/components/SettingItem';
 import {
-  Globe,
   Bell,
-  User,
-  Phone,
+  Moon,
   Info,
   FileText,
   MessageCircle,
   LogOut,
-  ChevronRight,
-  RefreshCw,
-  Wifi,
+  User,
   Shield,
+  HelpCircle,
+  Globe,
+  Mail,
+  Phone,
+  MapPin,
+  Lock,
 } from 'lucide-react-native';
 import { Header } from '@/components/Header';
-import { SettingItemCard } from '@/components/SettingItemCard';
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { signOut } = useUser();
+  const { user, signOut } = useUser();
+  const [notifications, setNotifications] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
 
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      router.replace('/');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
+  const handleNotificationChange = (value: boolean) => {
+    setNotifications(value);
+  };
+
+  const handleDarkModeChange = (value: boolean) => {
+    setDarkMode(value);
   };
 
   return (
@@ -42,125 +44,114 @@ export default function SettingsScreen() {
         showBackButton
       />
       <ScrollView 
-        style={styles.content}
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* General Settings */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>General Settings</Text>
-          <Card style={styles.sectionCard}>
-            <SettingItem 
-              icon={Globe}
-              title="Language"
-              value="English"
-              onPress={() => router.push('/about' as any)}
-              showChevron
-            />
-            <SettingItem 
-              icon={Bell}
-              title="Notifications"
-              value="Enabled"
-              onPress={() => router.push('/about' as any)}
-              showChevron
-            />
-          </Card>
-        </View>
-
-        {/* Profile & Account */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Profile & Account</Text>
+        <View style={styles.content}>
+          {/* Account Settings */}
+          <Text style={styles.sectionTitle}>Account Settings</Text>
           <Card style={styles.sectionCard}>
             <SettingItem 
               icon={User}
               title="Edit Profile"
               onPress={() => router.push('/profile/edit')}
-              showChevron
+            />
+            <SettingItem 
+              icon={Mail}
+              title="Email"
+              value={user?.email || 'Not provided'}
             />
             <SettingItem 
               icon={Phone}
-              title="Change Phone Number"
-              value="+1 (234) 567-8900"
-              onPress={() => router.push('/about' as any)}
-              showChevron
+              title="Phone"
+              value={user?.phone || 'Not provided'}
+            />
+            <SettingItem 
+              icon={MapPin}
+              title="Location"
+              value={user?.location || 'Not provided'}
+            />
+            <SettingItem 
+              icon={Globe}
+              title="Language"
+              value={user?.language || 'English'}
+            />
+            <SettingItem
+              icon={Lock}
+              title="Change Password"
+              onPress={() => router.push('change-password' as any)}
+            />
+            <SettingItem
+              icon={Bell}
+              title="Notifications"
+              onPress={() => router.push('notifications' as any)}
             />
           </Card>
-        </View>
 
-        {/* App Info & Support */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>App Info & Support</Text>
+          {/* App Settings */}
+          <Text style={styles.sectionTitle}>App Settings</Text>
+          <Card style={styles.sectionCard}>
+            <View style={styles.settingItem}>
+              <View style={styles.settingLeft}>
+                <Bell size={20} color={colors.neutral[600]} />
+                <Text style={styles.settingText}>Push Notifications</Text>
+              </View>
+              <Switch
+                value={notifications}
+                onValueChange={handleNotificationChange}
+                trackColor={{ false: colors.neutral[300], true: colors.primary[500] }}
+                thumbColor={colors.white}
+              />
+            </View>
+            <View style={styles.settingItem}>
+              <View style={styles.settingLeft}>
+                <Moon size={20} color={colors.neutral[600]} />
+                <Text style={styles.settingText}>Dark Mode</Text>
+              </View>
+              <Switch
+                value={darkMode}
+                onValueChange={handleDarkModeChange}
+                trackColor={{ false: colors.neutral[300], true: colors.primary[500] }}
+                thumbColor={colors.white}
+              />
+            </View>
+          </Card>
+
+          {/* More */}
+          <Text style={styles.sectionTitle}>More</Text>
           <Card style={styles.sectionCard}>
             <SettingItem 
               icon={Info}
               title="About Soil Pulse"
               onPress={() => router.push('/about')}
-              showChevron
-            />
-            <SettingItem 
-              icon={FileText}
-              title="Privacy Policy"
-              onPress={() => router.push('/privacy')}
-              showChevron
             />
             <SettingItem 
               icon={FileText}
               title="Terms & Conditions"
               onPress={() => router.push('/terms')}
-              showChevron
             />
             <SettingItem 
               icon={MessageCircle}
               title="Contact Support"
               onPress={() => router.push('/support')}
-              showChevron
+            />
+            <SettingItem 
+              icon={Shield}
+              title="Privacy Policy"
+              onPress={() => router.push('/privacy')}
             />
           </Card>
-        </View>
 
-        {/* Advanced Settings Section */}
-        <View style={styles.section}>
-          <SettingItemCard
-            icon={<Bell size={24} color={colors.primary[500]} />}
-            title="Advanced Notifications"
-            description="Manage alerts, thresholds, and AI-based soil warnings"
-            onPress={() => router.push('/settings/advanced-notifications' as any)}
-          />
-          
-          <SettingItemCard
-            icon={<RefreshCw size={24} color={colors.primary[500]} />}
-            title="Data Synchronization"
-            description="Control offline/online sync options and data refresh intervals"
-            onPress={() => router.push('/settings/data-sync' as any)}
-          />
-          
-          <SettingItemCard
-            icon={<Wifi size={24} color={colors.primary[500]} />}
-            title="Network Settings"
-            description="Manage data usage, low bandwidth mode, and Wi-Fi-only mode"
-            onPress={() => router.push('/settings/network' as any)}
-          />
-          
-          <SettingItemCard
-            icon={<Shield size={24} color={colors.primary[500]} />}
-            title="Security Settings"
-            description="Manage app security, PIN code, biometric lock, and session timeouts"
-            onPress={() => router.push('/settings/security' as any)}
-          />
+          {/* Sign Out */}
+          <TouchableOpacity
+            style={styles.signOutButton}
+            onPress={signOut}
+          >
+            <LogOut size={20} color={colors.error[500]} />
+            <Text style={styles.signOutText}>Sign Out</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
-
-      {/* Fixed Logout Button */}
-      <View style={styles.logoutContainer}>
-        <TouchableOpacity 
-          style={styles.logoutButton}
-          onPress={handleSignOut}
-          accessibilityRole="button"
-          accessibilityLabel="Sign Out"
-        >
-          <LogOut size={20} color={colors.error[500]} />
-          <Text style={styles.logoutText}>Sign Out</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
@@ -170,39 +161,50 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.neutral[100],
   },
-  content: {
+  scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: spacing.md,
+    padding: spacing.lg,
   },
-  section: {
-    marginBottom: spacing.lg,
+  content: {
+    gap: spacing.lg,
   },
   sectionTitle: {
-    ...typography.h3,
-    color: colors.neutral[700],
-    marginBottom: spacing.sm,
-    marginLeft: spacing.xs,
+    ...typography.headingSmall,
+    color: colors.neutral[900],
+    marginBottom: spacing.xs,
   },
   sectionCard: {
-    padding: spacing.md,
+    gap: spacing.sm,
   },
-  logoutContainer: {
-    padding: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.neutral[200],
-    backgroundColor: colors.white,
+  settingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
   },
-  logoutButton: {
+  settingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  settingText: {
+    ...typography.bodyMedium,
+    color: colors.neutral[900],
+  },
+  signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    padding: spacing.sm,
+    padding: spacing.md,
+    backgroundColor: colors.error[50],
+    borderRadius: spacing.md,
+    marginTop: spacing.lg,
   },
-  logoutText: {
-    ...typography.button,
+  signOutText: {
+    ...typography.labelMedium,
     color: colors.error[500],
   },
 }); 

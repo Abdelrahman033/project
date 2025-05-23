@@ -209,6 +209,15 @@ export default function ProfileScreen() {
                   thumbColor={colors.white}
                 />
               </View>
+              <View style={styles.settingItem}>
+                <View style={styles.settingLeft}>
+                  <Shield size={20} color={colors.neutral[600]} />
+                  <Text style={styles.settingText}>Security Settings</Text>
+                </View>
+                <TouchableOpacity onPress={() => router.push('/security')}>
+                  <ChevronRight size={20} color={colors.neutral[400]} />
+                </TouchableOpacity>
+              </View>
             </Card>
           </ProfileSection>
 

@@ -1,25 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useUser } from '@/contexts/UserContext';
 import { colors, spacing, typography } from '@/theme';
 import { Card } from '@/components/Card';
 import { Header } from '@/components/Header';
 import {
-  Shield,
-  Lock,
-  Bell,
   Clock,
   ChevronRight,
 } from 'lucide-react-native';
-import { getLastLoginInfo } from '@/utils/deviceManager';
-
-interface LoginInfo {
-  lastLogin: {
-    toDate: () => Date;
-  };
-  lastDevice: string;
-}
 
 // Reusable Setting Item Component
 const SettingItem = ({ 
@@ -65,38 +53,13 @@ const Section = ({
   </View>
 );
 
-export default function SecurityScreen() {
+export default function DataRetentionScreen() {
   const router = useRouter();
-  const { user } = useUser();
-  const [lastLogin, setLastLogin] = useState<LoginInfo | null>(null);
-
-  useEffect(() => {
-    const loadLastLoginInfo = async () => {
-      if (user?.id) {
-        const loginInfo = await getLastLoginInfo(user.id);
-        if (loginInfo) {
-          setLastLogin(loginInfo as LoginInfo);
-        }
-      }
-    };
-
-    loadLastLoginInfo();
-  }, [user]);
-
-  const formatDate = (timestamp: LoginInfo['lastLogin'] | undefined) => {
-    if (!timestamp) return 'Never';
-    const date = timestamp.toDate();
-    return date.toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
 
   return (
     <View style={styles.container}>
       <Header 
-        title="Security"
+        title="Data Retention"
         showBackButton
       />
       <ScrollView 
@@ -104,33 +67,12 @@ export default function SecurityScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.content}>
-          {/* Last Login Section */}
-          <Section title="Last Login">
+          <Section title="Data Management">
             <SettingItem
               icon={Clock}
-              title="Last login"
-              subtitle={`${formatDate(lastLogin?.lastLogin)} • ${lastLogin?.lastDevice || 'No device information available'}`}
-              showChevron={false}
-            />
-          </Section>
-
-          {/* Authentication Settings Section */}
-          <Section title="Authentication">
-            <SettingItem
-              icon={Lock}
-              title="Change Password"
-              subtitle="Update your account password"
-              onPress={() => router.push('/settings/change-password')}
-            />
-          </Section>
-
-          {/* Privacy Settings Section */}
-          <Section title="Privacy">
-            <SettingItem
-              icon={Bell}
-              title="Notification Settings"
-              subtitle="Manage your notification preferences"
-              onPress={() => router.push('/settings/notifications')}
+              title="Data Retention Policy"
+              subtitle="View and manage how long we keep your data"
+              onPress={() => router.push('/settings/data-retention')}
             />
           </Section>
         </View>
